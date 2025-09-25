@@ -1,0 +1,11 @@
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "password": "Password123",
+  "bloodType": "O+",
+  "dateOfBirth": "1995-01-01",
+  "city": "New York",
+  "state": "NY"
+}
