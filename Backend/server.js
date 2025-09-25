@@ -15,6 +15,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files for uploaded images
+app.use('/uploads', express.static('uploads'));
+
 // Basic route
 app.get('/', (req, res) => {
   res.json({ 
@@ -47,6 +50,7 @@ app.get('/health', async (req, res) => {
 const authRoutes = require('./routes/auth');
 const donorRoutes = require('./routes/donors');
 const contactRoutes = require('./routes/contact');
+const bloodBankRoutes = require('./routes/bloodBanks');
 
 console.log('=== MOUNTING ROUTES ===');
 console.log('Auth routes type:', typeof authRoutes);
@@ -66,6 +70,9 @@ app.use((req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 console.log('✅ Auth routes mounted at /api/auth');
+
+app.use('/api/blood-banks', bloodBankRoutes);
+console.log('✅ Blood bank routes mounted at /api/blood-banks');
 
 app.use('/api/donors', donorRoutes);
 console.log('✅ Donor routes mounted at /api/donors');

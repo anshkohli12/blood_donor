@@ -19,6 +19,10 @@ import AdminDashboard from "./pages/AdminDashboard"
 import AdminContactMessages from "./pages/AdminContactMessages"
 import AdminProfile from "./pages/AdminProfile"
 import AdminUsers from "./pages/AdminUsers"
+import AdminBloodBanks from "./pages/AdminBloodBanks"
+import BloodBankLogin from "./pages/BloodBankLogin"
+import BloodBankDashboard from "./pages/BloodBankDashboard"
+import BloodBankProfile from "./pages/BloodBankProfile"
 
 function App() {
   return (
@@ -146,6 +150,36 @@ function App() {
               <MainLayout>
                 <AdminUsers />
               </MainLayout>
+            }
+          />
+          <Route
+            path="/admin/blood-banks"
+            element={
+              <MainLayout>
+                <AdminBloodBanks />
+              </MainLayout>
+            }
+          />
+
+          {/* Blood Bank Routes */}
+          <Route
+            path="/blood-bank-login"
+            element={
+              <AuthLayout>
+                <BloodBankLogin />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/blood-bank-dashboard"
+            element={
+              <BloodBankDashboard />
+            }
+          />
+          <Route
+            path="/blood-bank-profile"
+            element={
+              <BloodBankProfile />
             }
           />
         </Routes>

@@ -12,7 +12,22 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token")
+    // Check for regular user token
+    let token = localStorage.getItem("token")
+    
+    // Check for blood bank user token
+    if (!token) {
+      const bloodBankUser = localStorage.getItem("bloodBankUser")
+      if (bloodBankUser) {
+        try {
+          const userData = JSON.parse(bloodBankUser)
+          token = userData.token
+        } catch (e) {
+          console.error("Error parsing bloodBankUser data:", e)
+        }
+      }
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

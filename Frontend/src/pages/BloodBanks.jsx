@@ -7,6 +7,7 @@ import { Search, MapPin, Navigation, Droplets, Filter } from "lucide-react"
 import BloodBankCard from "../components/BloodBankCard"
 import CustomButton from "../components/CustomButton"
 import FormInput from "../components/FormInput"
+import { bloodBankService } from "../services/bloodBankService"
 
 const BloodBanks = () => {
   const [bloodBanks, setBloodBanks] = useState([])
@@ -17,7 +18,57 @@ const BloodBanks = () => {
   const [selectedLocation, setSelectedLocation] = useState("")
   const [userLocation, setUserLocation] = useState(null)
 
-  // Mock data for demonstration
+  // Load blood banks from API
+  const loadBloodBanks = async (currentLocation = null) => {
+    try {
+      setLoading(true)
+      const response = await bloodBankService.getAllBloodBanks()
+      const bloodBanksData = response.data || []
+      
+      // Calculate distance if user location is available
+      let bloodBanksWithDistance = bloodBanksData
+      const locationToUse = currentLocation || userLocation
+      if (locationToUse) {
+        bloodBanksWithDistance = bloodBanksData.map(bank => {
+          if (bank.location && bank.location.coordinates && bank.location.coordinates.length === 2) {
+            const distance = calculateDistance(
+              locationToUse.lat,
+              locationToUse.lng,
+              bank.location.coordinates[1], // latitude
+              bank.location.coordinates[0]  // longitude
+            )
+            return { ...bank, distance: parseFloat(distance.toFixed(1)) }
+          }
+          return bank
+        })
+      }
+      
+      setBloodBanks(bloodBanksWithDistance)
+      setFilteredBloodBanks(bloodBanksWithDistance)
+    } catch (error) {
+      console.error('Error loading blood banks:', error)
+      // Fallback to mock data on error
+      setBloodBanks(mockBloodBanks)
+      setFilteredBloodBanks(mockBloodBanks)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 3959 // Radius of the Earth in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    return R * c
+  }
+
+  // Mock data for demonstration (fallback)
   const mockBloodBanks = [
     {
       id: 1,
@@ -110,27 +161,28 @@ const BloodBanks = () => {
       { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: "power3.out" },
     )
 
-    // Get user location
+    // Get user location first, then load blood banks
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          })
+          }
+          setUserLocation(location)
+          // Load blood banks after getting location
+          loadBloodBanks(location)
         },
         (error) => {
           console.log("Location access denied")
+          // Load blood banks even without location
+          loadBloodBanks()
         },
       )
+    } else {
+      // Load blood banks if geolocation is not supported
+      loadBloodBanks()
     }
-
-    // Simulate API call
-    setTimeout(() => {
-      setBloodBanks(mockBloodBanks)
-      setFilteredBloodBanks(mockBloodBanks)
-      setLoading(false)
-    }, 1000)
   }, [])
 
   useEffect(() => {
@@ -284,7 +336,7 @@ const BloodBanks = () => {
             >
               {filteredBloodBanks.map((bloodBank, index) => (
                 <motion.div
-                  key={bloodBank.id}
+                  key={bloodBank._id || bloodBank.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}

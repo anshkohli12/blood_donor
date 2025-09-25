@@ -50,7 +50,29 @@ const BloodBankCard = ({ bloodBank }) => {
 
   const formatHours = (hours) => {
     if (!hours) return "Hours not available"
-    return hours
+    
+    // If it's already a string (like operatingHoursDisplay), return it
+    if (typeof hours === 'string') {
+      return hours
+    }
+    
+    // If it's an object with day schedules, format it
+    if (typeof hours === 'object' && hours.monday) {
+      const openDays = []
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      
+      for (let i = 0; i < days.length; i++) {
+        const day = hours[days[i]]
+        if (day && day.isOpen) {
+          openDays.push(`${dayNames[i]}: ${day.openTime} - ${day.closeTime}`)
+        }
+      }
+      
+      return openDays.length > 0 ? openDays.join(', ') : 'Hours not available'
+    }
+    
+    return "Hours not available"
   }
 
   const getOperatingStatus = () => {
@@ -68,20 +90,49 @@ const BloodBankCard = ({ bloodBank }) => {
       whileHover={{ y: -5 }}
       className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
     >
-      {/* Header */}
+      {/* Header with Profile Image */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h3 className="text-xl font-bold font-montserrat text-gray-900 mb-2">{bloodBank.name}</h3>
-            <div className="flex items-center space-x-2 text-gray-600 mb-2">
-              <MapPin className="h-4 w-4" />
-              <span className="text-sm">{bloodBank.address}</span>
+          <div className="flex items-start space-x-4 flex-1">
+            {/* Profile Image */}
+            <div className="flex-shrink-0">
+              <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden">
+                {bloodBank.profileImage ? (
+                  <img
+                    src={`http://localhost:5000${bloodBank.profileImage}`}
+                    alt={`${bloodBank.name} profile`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-logo.png'
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center space-x-2 text-gray-600">
-              <span className="text-sm">
-                {bloodBank.city}, {bloodBank.state} {bloodBank.zipCode}
-              </span>
-              {bloodBank.distance && <span className="text-xs text-gray-400">• {bloodBank.distance} mi away</span>}
+            
+            {/* Blood Bank Info */}
+            <div className="flex-1">
+              <h3 className="text-xl font-bold font-montserrat text-gray-900 mb-2">{bloodBank.name}</h3>
+              <div className="flex items-center space-x-2 text-gray-600 mb-2">
+                <MapPin className="h-4 w-4" />
+                <span className="text-sm">
+                  {typeof bloodBank.address === 'string' 
+                    ? bloodBank.address 
+                    : bloodBank.address?.street || 'Address not available'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-600">
+                <span className="text-sm">
+                  {typeof bloodBank.address === 'object' 
+                    ? `${bloodBank.address?.city || ''}, ${bloodBank.address?.state || ''} ${bloodBank.address?.zipCode || ''}`.trim()
+                    : `${bloodBank.city || ''}, ${bloodBank.state || ''} ${bloodBank.zipCode || ''}`.trim()}
+                </span>
+                {bloodBank.distance && <span className="text-xs text-gray-400">• {bloodBank.distance} mi away</span>}
+              </div>
             </div>
           </div>
 
@@ -105,7 +156,9 @@ const BloodBankCard = ({ bloodBank }) => {
         {/* Operating Hours */}
         <div className="flex items-center space-x-2 text-gray-600 mb-4">
           <Clock className="h-4 w-4" />
-          <span className="text-sm">{formatHours(bloodBank.operatingHours)}</span>
+          <span className="text-sm">
+            {bloodBank.operatingHoursDisplay || formatHours(bloodBank.operatingHours) || "Hours not available"}
+          </span>
         </div>
 
         {/* Blood Stock Overview */}
@@ -123,6 +176,7 @@ const BloodBankCard = ({ bloodBank }) => {
           {/* Quick Stock Overview */}
           <div className="grid grid-cols-4 gap-2">
             {Object.entries(bloodBank.bloodStock || {})
+              .filter(([bloodType]) => bloodType !== '_id' && bloodType !== '__v')
               .slice(0, 4)
               .map(([bloodType, units]) => {
                 const stockStatus = getStockStatus(units)
@@ -155,7 +209,9 @@ const BloodBankCard = ({ bloodBank }) => {
             className="border-t pt-4 mt-4"
           >
             <div className="grid grid-cols-2 gap-3">
-              {Object.entries(bloodBank.bloodStock || {}).map(([bloodType, units]) => {
+              {Object.entries(bloodBank.bloodStock || {})
+                .filter(([bloodType]) => bloodType !== '_id' && bloodType !== '__v')
+                .map(([bloodType, units]) => {
                 const stockStatus = getStockStatus(units)
                 const StockIcon = stockStatus.icon
 

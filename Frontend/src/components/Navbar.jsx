@@ -181,6 +181,16 @@ const Navbar = () => {
                 >
                   Login
                 </Link>
+                <Link
+                  to="/blood-bank-login"
+                  className={`font-medium transition-all duration-300 hover:scale-105 px-4 py-2 rounded-lg border ${
+                    isScrolled || !isHomePage
+                      ? "text-gray-800 hover:text-blood-crimson border-gray-300 hover:border-blood-crimson hover:bg-gray-100" 
+                      : "text-white hover:text-pink-200 border-white/30 hover:border-pink-200 hover:bg-white/10"
+                  }`}
+                >
+                  Blood Bank Login
+                </Link>
                 <Link 
                   to="/become-donor" 
                   className={`btn-primary transition-all duration-300 hover:scale-105 shadow-lg ${
@@ -285,6 +295,13 @@ const Navbar = () => {
                       className="block text-gray-700 hover:text-blood-crimson font-medium"
                     >
                       Login
+                    </Link>
+                    <Link
+                      to="/blood-bank-login"
+                      onClick={() => setIsOpen(false)}
+                      className="block text-gray-700 hover:text-blood-crimson font-medium border border-gray-300 px-3 py-2 rounded-lg text-center"
+                    >
+                      Blood Bank Login
                     </Link>
                     <Link
                       to="/become-donor"

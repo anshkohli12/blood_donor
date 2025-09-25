@@ -1,4 +1,6 @@
 const UserModel = require('../models/User');
+const BloodBank = require('../models/BloodBank');
+const jwt = require('jsonwebtoken');
 
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
@@ -13,7 +15,28 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    const user = await UserModel.verifyToken(token);
+    // Decode the token to check its type
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    let user;
+    if (decoded.type === 'bloodbank') {
+      // Blood bank token
+      const bloodBank = await BloodBank.findById(decoded.id);
+      if (!bloodBank) {
+        throw new Error('Blood bank not found');
+      }
+      user = {
+        id: bloodBank._id.toString(),
+        type: 'bloodbank',
+        name: bloodBank.name,
+        email: bloodBank.email,
+        ...decoded
+      };
+    } else {
+      // Regular user token
+      user = await UserModel.verifyToken(token);
+    }
+    
     req.user = user;
     next();
   } catch (error) {

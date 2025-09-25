@@ -18,6 +18,7 @@ import {
   User,
   Mail,
   Phone,
+  Building2,
   MapPin,
   Activity,
   AlertCircle,
@@ -277,6 +278,12 @@ const AdminDashboard = () => {
       name: "Events",
       icon: Calendar,
       description: "Organize and manage blood drive events"
+    },
+    {
+      id: "blood-banks",
+      name: "Blood Banks",
+      icon: Building2,
+      description: "Manage blood bank registrations and inventory"
     },
     {
       id: "analytics",
@@ -869,6 +876,23 @@ const AdminDashboard = () => {
                 <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Event Management</h3>
                 <p className="text-gray-600">Organize blood drive events - Coming Soon</p>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      case "blood-banks":
+        return (
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center py-12">
+                <Building2 className="h-16 w-16 text-blood-crimson mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Blood Bank Management</h3>
+                <p className="text-gray-600 mb-4">Manage blood bank registrations, credentials, and inventory</p>
+                <Link to="/admin/blood-banks">
+                  <CustomButton variant="primary">
+                    Open Blood Bank Management
+                  </CustomButton>
+                </Link>
               </div>
             </CardContent>
           </Card>
