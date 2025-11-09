@@ -35,8 +35,14 @@ const Login = () => {
     try {
       setIsLoading(true)
       setApiError("")
-      await login(data.email, data.password)
-      navigate("/dashboard")
+      const response = await login(data.email, data.password)
+      
+      // Redirect based on user role
+      if (response.user.role === 'admin') {
+        navigate("/admin-dashboard")
+      } else {
+        navigate("/dashboard")
+      }
     } catch (error) {
       setApiError(error.response?.data?.message || "Login failed. Please try again.")
     } finally {

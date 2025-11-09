@@ -1,14 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Calendar, MapPin, Clock, Users, Heart, Phone, Mail, User, CheckCircle, AlertCircle, Info } from "lucide-react"
 import CustomButton from "./CustomButton"
+import { eventService } from "../services/eventService"
 
 const EventCard = ({ event }) => {
   const [showDetails, setShowDetails] = useState(false)
-  const [isRegistered, setIsRegistered] = useState(event.isRegistered || false)
+  const [isRegistered, setIsRegistered] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token')
+    if (token) {
+      setCurrentUser({ token })
+      // Check if user is registered for this event
+      checkRegistrationStatus()
+    }
+  }, [event._id])
+
+  const checkRegistrationStatus = async () => {
+    try {
+      const userId = localStorage.getItem('userId')
+      if (userId && event.registrations) {
+        const registered = event.registrations.some(
+          reg => reg.userId === userId || reg.userId?._id === userId
+        )
+        setIsRegistered(registered)
+      }
+    } catch (error) {
+      console.error('Error checking registration status:', error)
+    }
+  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -57,21 +83,31 @@ const EventCard = ({ event }) => {
   }
 
   const handleRegistration = async () => {
+    if (!currentUser) {
+      alert('Please login to register for events')
+      return
+    }
+
     setIsRegistering(true)
     try {
       if (isRegistered) {
-        // Unregister logic
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
-        setIsRegistered(false)
-        alert(`Successfully unregistered from ${event.title}`)
+        // Unregister
+        const response = await eventService.unregisterFromEvent(event._id)
+        if (response.success) {
+          setIsRegistered(false)
+          alert(`Successfully unregistered from ${event.title}`)
+        }
       } else {
-        // Register logic
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
-        setIsRegistered(true)
-        alert(`Successfully registered for ${event.title}`)
+        // Register
+        const response = await eventService.registerForEvent(event._id)
+        if (response.success) {
+          setIsRegistered(true)
+          alert(`Successfully registered for ${event.title}`)
+        }
       }
     } catch (error) {
-      alert("Registration failed. Please try again.")
+      console.error('Registration error:', error)
+      alert(error.message || "Registration failed. Please try again.")
     } finally {
       setIsRegistering(false)
     }
@@ -89,7 +125,7 @@ const EventCard = ({ event }) => {
       {/* Event Image */}
       <div className="relative h-48 bg-gradient-to-r from-blood-deep to-blood-crimson">
         <img
-          src={event.image || "/placeholder.svg?height=200&width=400&query=blood donation event"}
+          src={event.image ? `http://localhost:5000${event.image}` : "/placeholder.svg?height=200&width=400&query=blood donation event"}
           alt={event.title}
           className="w-full h-full object-cover"
         />
@@ -162,7 +198,7 @@ const EventCard = ({ event }) => {
         <div className="mb-4 p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center space-x-2 text-gray-600">
             <User className="h-4 w-4" />
-            <span className="text-sm font-medium">Organized by: {event.organizer}</span>
+            <span className="text-sm font-medium">Organized by: {event.organizerName || event.organizer?.name || 'Unknown'}</span>
           </div>
         </div>
 

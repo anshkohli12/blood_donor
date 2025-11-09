@@ -11,9 +11,39 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const { isAuthenticated, user, logout } = useAuth()
   const location = useLocation()
+  const [bloodBank, setBloodBank] = useState(null)
+  const [isBloodBankAuth, setIsBloodBankAuth] = useState(false)
   
   // Check if we're on homepage for special styling
   const isHomePage = location.pathname === "/"
+
+  // Check for blood bank authentication
+  useEffect(() => {
+    const checkBloodBankAuth = () => {
+      const bloodbankToken = localStorage.getItem('bloodbankToken')
+      const bloodbankData = localStorage.getItem('bloodbank')
+      
+      if (bloodbankToken && bloodbankData) {
+        try {
+          const parsedData = JSON.parse(bloodbankData)
+          setBloodBank(parsedData)
+          setIsBloodBankAuth(true)
+        } catch (error) {
+          console.error('Error parsing blood bank data:', error)
+          localStorage.removeItem('bloodbankToken')
+          localStorage.removeItem('bloodbank')
+          setBloodBank(null)
+          setIsBloodBankAuth(false)
+        }
+      } else {
+        setBloodBank(null)
+        setIsBloodBankAuth(false)
+      }
+    }
+    
+    // Check immediately
+    checkBloodBankAuth()
+  }, [location]) // Re-check whenever location changes
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +65,16 @@ const Navbar = () => {
       ]
     }
     
+    if (isBloodBankAuth) {
+      return [
+        { name: "Dashboard", path: "/blood-bank-dashboard" },
+        { name: "Events", path: "/events" },
+        { name: "Create Event", path: "/create-event" },
+        { name: "Find Donors", path: "/find-donors" },
+        { name: "Contact", path: "/contact" },
+      ]
+    }
+    
     return [
       { name: "Home", path: "/" },
       { name: "About", path: "/about" },
@@ -48,7 +88,15 @@ const Navbar = () => {
   const navLinks = getNavLinks()
 
   const handleLogout = () => {
-    logout()
+    if (isBloodBankAuth) {
+      localStorage.removeItem('bloodbankToken')
+      localStorage.removeItem('bloodbank')
+      setBloodBank(null)
+      setIsBloodBankAuth(false)
+      window.location.href = '/'
+    } else {
+      logout()
+    }
     setIsOpen(false)
   }
 
@@ -115,7 +163,32 @@ const Navbar = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden lg:flex items-center space-x-4">
-            {isAuthenticated ? (
+            {isBloodBankAuth ? (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/blood-bank-dashboard"
+                  className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
+                    isScrolled || !isHomePage
+                      ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100" 
+                      : "text-white hover:text-pink-200 hover:bg-white/10"
+                  }`}
+                >
+                  <User className="h-4 w-4" />
+                  <span>{bloodBank?.name || "Blood Bank"}</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
+                    isScrolled || !isHomePage
+                      ? "text-gray-800 hover:text-red-600 hover:bg-red-50" 
+                      : "text-white hover:text-pink-200 hover:bg-white/10"
+                  }`}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 {user?.role === 'admin' ? (
                   <>
@@ -247,7 +320,25 @@ const Navbar = () => {
               ))}
 
               <div className="pt-4 border-t space-y-4">
-                {isAuthenticated ? (
+                {isBloodBankAuth ? (
+                  <>
+                    <Link
+                      to="/blood-bank-dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blood-crimson font-medium"
+                    >
+                      <User className="h-4 w-4" />
+                      <span>{bloodBank?.name || "Blood Bank"}</span>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blood-crimson font-medium"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </button>
+                  </>
+                ) : isAuthenticated ? (
                   <>
                     {user?.role === 'admin' ? (
                       <>

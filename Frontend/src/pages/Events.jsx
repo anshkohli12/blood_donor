@@ -1,77 +1,36 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { gsap } from "gsap"
 import { Search, Calendar, MapPin, Plus } from "lucide-react"
 import EventCard from "../components/EventCard"
 import CustomButton from "../components/CustomButton"
 import FormInput from "../components/FormInput"
+import { eventService } from "../services/eventService"
 
 const Events = () => {
+  const navigate = useNavigate()
   const [events, setEvents] = useState([])
   const [filteredEvents, setFilteredEvents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [selectedLocation, setSelectedLocation] = useState("")
-
-  // Mock data for demonstration
-  const mockEvents = [
-    {
-      id: 1,
-      title: "Community Blood Drive - Downtown",
-      description: "Join us for a community blood drive to help save lives in our downtown area.",
-      date: "2024-02-15T09:00:00",
-      endDate: "2024-02-15T17:00:00",
-      location: "Downtown Community Center, 123 Main St",
-      organizer: "Red Cross",
-      maxCapacity: 100,
-      registeredCount: 67,
-      isRegistered: false,
-      image: "/blood-donation-event-community-center.jpg",
-      requirements: "Must be 18+ years old, weigh at least 110 lbs, and be in good health",
-      contactPhone: "(555) 123-4567",
-      contactEmail: "events@redcross.org",
-      additionalInfo: "Free refreshments will be provided. Please bring a valid ID.",
-    },
-    {
-      id: 2,
-      title: "Emergency Blood Collection Drive",
-      description: "Urgent need for O- and AB+ blood types. Help us meet critical demand.",
-      date: "2024-02-20T08:00:00",
-      endDate: "2024-02-20T16:00:00",
-      location: "City Hospital, 456 Health Ave",
-      organizer: "City Hospital Blood Bank",
-      maxCapacity: 150,
-      registeredCount: 89,
-      isRegistered: true,
-      image: "/emergency-blood-drive-hospital.jpg",
-      requirements: "All blood types welcome, special need for O- and AB+",
-      contactPhone: "(555) 987-6543",
-      contactEmail: "blooddrive@cityhospital.org",
-      additionalInfo: "Walk-ins welcome. Appointments preferred to reduce wait time.",
-    },
-    {
-      id: 3,
-      title: "University Blood Drive Week",
-      description: "Student-organized blood drive supporting local hospitals and emergency services.",
-      date: "2024-03-01T10:00:00",
-      endDate: "2024-03-05T18:00:00",
-      location: "University Student Center, 789 Campus Dr",
-      organizer: "University Health Services",
-      maxCapacity: 200,
-      registeredCount: 156,
-      isRegistered: false,
-      image: "/university-blood-drive-students.jpg",
-      requirements: "Students, faculty, and community members welcome",
-      contactPhone: "(555) 456-7890",
-      contactEmail: "health@university.edu",
-      additionalInfo: "Special prizes for student donors. Food trucks on-site daily.",
-    },
-  ]
+  const [currentUser, setCurrentUser] = useState(null)
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token')
+    const bloodbankToken = localStorage.getItem('bloodbankToken')
+    if (token || bloodbankToken) {
+      // User is logged in - could be regular user or blood bank
+      const userType = bloodbankToken ? 'bloodbank' : 'user'
+      setCurrentUser({ type: userType })
+    }
+
     gsap.fromTo(".events-header", { opacity: 0, y: -50 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out" })
     gsap.fromTo(
       ".events-content",
@@ -79,13 +38,30 @@ const Events = () => {
       { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: "power3.out" },
     )
 
-    // Simulate API call
-    setTimeout(() => {
-      setEvents(mockEvents)
-      setFilteredEvents(mockEvents)
-      setLoading(false)
-    }, 1000)
+    fetchEvents()
   }, [])
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true)
+      setError("")
+      
+      const response = await eventService.getAllEvents({
+        upcoming: selectedFilter === "upcoming" ? true : undefined,
+        limit: 100
+      })
+      
+      if (response.success) {
+        setEvents(response.data)
+        setFilteredEvents(response.data)
+      }
+    } catch (err) {
+      console.error('Error fetching events:', err)
+      setError(err.message || 'Failed to load events')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     let filtered = events
@@ -130,6 +106,20 @@ const Events = () => {
     setFilteredEvents(filtered)
   }, [events, searchTerm, selectedFilter, selectedLocation])
 
+  const handleCreateEvent = () => {
+    if (!currentUser) {
+      alert('Please login to create an event')
+      navigate('/login')
+      return
+    }
+    
+    if (currentUser.type === 'bloodbank') {
+      navigate('/create-event')
+    } else {
+      alert('Only blood banks can create events')
+    }
+  }
+
   return (
     <div className="pt-28 section-padding">
       <div className="container-custom">
@@ -151,6 +141,13 @@ const Events = () => {
             Join upcoming blood donation drives and events in your community. Every donation saves lives.
           </motion.p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
 
         {/* Filters and Search */}
         <div className="events-content mb-8">
@@ -191,7 +188,7 @@ const Events = () => {
               <CustomButton
                 variant="primary"
                 icon={Plus}
-                onClick={() => alert("Create Event functionality would be implemented here")}
+                onClick={handleCreateEvent}
               >
                 Create Event
               </CustomButton>
@@ -222,7 +219,7 @@ const Events = () => {
             >
               {filteredEvents.map((event, index) => (
                 <motion.div
-                  key={event.id}
+                  key={event._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -255,7 +252,7 @@ const Events = () => {
               variant="secondary"
               size="lg"
               icon={Plus}
-              onClick={() => alert("Event organization form would be implemented here")}
+              onClick={handleCreateEvent}
             >
               Organize an Event
             </CustomButton>

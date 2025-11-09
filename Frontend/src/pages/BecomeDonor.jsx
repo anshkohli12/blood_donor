@@ -44,7 +44,8 @@ const schema = yup.object({
   zipCode: yup
     .string()
     .required("ZIP code is required")
-    .matches(/^\d{5}(-\d{4})?$/, "Please enter a valid ZIP code"),
+    .min(3, "ZIP code must be at least 3 characters")
+    .max(10, "ZIP code must be at most 10 characters"),
   emergencyContact: yup.string().required("Emergency contact is required"),
   emergencyPhone: yup
     .string()
@@ -151,19 +152,19 @@ const BecomeDonor = () => {
         registrationDate: new Date().toISOString(),
       }
 
-      if (isAuthenticated) {
-        await donorService.updateDonorProfile(user.id, donorData)
-      } else {
-        // If not authenticated, redirect to register
-        navigate("/register", { state: { donorData } })
-        return
-      }
+      // Create new donor regardless of authentication status
+      const result = await donorService.createDonor(donorData)
 
-      navigate("/dashboard", {
-        state: {
-          message: "Welcome to our donor community! Your profile has been created successfully.",
-        },
-      })
+      if (result.success) {
+        navigate("/", {
+          state: {
+            message: "Thank you for becoming a donor! Your registration has been completed successfully.",
+            type: "success"
+          },
+        })
+      } else {
+        setApiError(result.message || "Registration failed. Please try again.")
+      }
     } catch (error) {
       setApiError(error.response?.data?.message || "Registration failed. Please try again.")
     } finally {

@@ -37,12 +37,16 @@ const BloodBankLogin = () => {
       const response = await bloodBankService.loginBloodBank(formData)
       
       if (response.data.token) {
-        // Store blood bank user data
-        localStorage.setItem('bloodBankUser', JSON.stringify({
-          token: response.data.token,
-          bloodBankId: response.data.data.id,
+        // Store blood bank token
+        localStorage.setItem('bloodbankToken', response.data.token)
+        
+        // Store blood bank data
+        localStorage.setItem('bloodbank', JSON.stringify({
+          id: response.data.data.id,
           name: response.data.data.name,
-          email: response.data.data.email
+          email: response.data.data.email,
+          contact: response.data.data.contact,
+          address: response.data.data.address
         }))
         
         // Redirect to blood bank dashboard

@@ -19,10 +19,13 @@ import AdminDashboard from "./pages/AdminDashboard"
 import AdminContactMessages from "./pages/AdminContactMessages"
 import AdminProfile from "./pages/AdminProfile"
 import AdminUsers from "./pages/AdminUsers"
+import AdminDonors from "./pages/AdminDonors"
 import AdminBloodBanks from "./pages/AdminBloodBanks"
+import AdminEvents from "./pages/AdminEvents"
 import BloodBankLogin from "./pages/BloodBankLogin"
 import BloodBankDashboard from "./pages/BloodBankDashboard"
 import BloodBankProfile from "./pages/BloodBankProfile"
+import CreateEvent from "./pages/CreateEvent"
 
 function App() {
   return (
@@ -153,10 +156,26 @@ function App() {
             }
           />
           <Route
+            path="/admin/donors"
+            element={
+              <MainLayout>
+                <AdminDonors />
+              </MainLayout>
+            }
+          />
+          <Route
             path="/admin/blood-banks"
             element={
               <MainLayout>
                 <AdminBloodBanks />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/admin/events"
+            element={
+              <MainLayout>
+                <AdminEvents />
               </MainLayout>
             }
           />
@@ -180,6 +199,14 @@ function App() {
             path="/blood-bank-profile"
             element={
               <BloodBankProfile />
+            }
+          />
+          <Route
+            path="/create-event"
+            element={
+              <MainLayout>
+                <CreateEvent />
+              </MainLayout>
             }
           />
         </Routes>

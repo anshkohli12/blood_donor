@@ -253,7 +253,13 @@ const AdminDashboard = () => {
       id: "users",
       name: "Users",
       icon: Users,
-      description: "Manage registered users and donors"
+      description: "Manage registered users"
+    },
+    {
+      id: "donors",
+      name: "Donors",
+      icon: Heart,
+      description: "View and manage blood donors"
     },
     {
       id: "messages",
@@ -852,6 +858,23 @@ const AdminDashboard = () => {
         return renderOverview()
       case "users":
         return renderUsers()
+      case "donors":
+        return (
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center py-12">
+                <Heart className="h-16 w-16 text-red-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Donor Management</h3>
+                <p className="text-gray-600 mb-4">View and manage all registered blood donors</p>
+                <Link to="/admin/donors">
+                  <CustomButton variant="primary">
+                    View All Donors
+                  </CustomButton>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )
       case "messages":
         return renderMessages()
       case "website":

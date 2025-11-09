@@ -51,6 +51,7 @@ const authRoutes = require('./routes/auth');
 const donorRoutes = require('./routes/donors');
 const contactRoutes = require('./routes/contact');
 const bloodBankRoutes = require('./routes/bloodBanks');
+const eventRoutes = require('./routes/events');
 
 console.log('=== MOUNTING ROUTES ===');
 console.log('Auth routes type:', typeof authRoutes);
@@ -79,6 +80,9 @@ console.log('✅ Donor routes mounted at /api/donors');
 
 app.use('/api/contact', contactRoutes);
 console.log('✅ Contact routes mounted at /api/contact');
+
+app.use('/api/events', eventRoutes);
+console.log('✅ Event routes mounted at /api/events');
 
 // Debug middleware to log all requests - moved after routes
 

@@ -47,8 +47,8 @@ const BloodBankDashboard = () => {
   const validBloodTypes = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']
 
   useEffect(() => {
-    const bloodBankUser = localStorage.getItem('bloodBankUser')
-    if (!bloodBankUser) {
+    const bloodbankToken = localStorage.getItem('bloodbankToken')
+    if (!bloodbankToken) {
       navigate('/blood-bank-login')
       return
     }
@@ -60,9 +60,9 @@ const BloodBankDashboard = () => {
   const loadBloodBankData = async () => {
     try {
       setLoading(true)
-      const userData = JSON.parse(localStorage.getItem('bloodBankUser'))
-      if (userData && userData.bloodBankId) {
-        const response = await bloodBankService.getBloodBankById(userData.bloodBankId)
+      const userData = JSON.parse(localStorage.getItem('bloodbank'))
+      if (userData && userData.id) {
+        const response = await bloodBankService.getBloodBankById(userData.id)
         setBloodBank(response.data)
         
         // Calculate stats
@@ -97,7 +97,8 @@ const BloodBankDashboard = () => {
     } catch (error) {
       console.error('Error loading blood bank data:', error)
       if (error.response?.status === 401) {
-        localStorage.removeItem('bloodBankUser')
+        localStorage.removeItem('bloodbankToken')
+        localStorage.removeItem('bloodbank')
         navigate('/blood-bank-login')
       }
     } finally {
@@ -116,8 +117,8 @@ const BloodBankDashboard = () => {
 
   const handleStockUpdate = async () => {
     try {
-      const userData = JSON.parse(localStorage.getItem('bloodBankUser'))
-      await bloodBankService.updateBulkBloodStock(userData.bloodBankId, stockUpdates)
+      const userData = JSON.parse(localStorage.getItem('bloodbank'))
+      await bloodBankService.updateBulkBloodStock(userData.id, stockUpdates)
       
       setEditingStock(false)
       await loadBloodBankData()
@@ -143,7 +144,8 @@ const BloodBankDashboard = () => {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('bloodBankUser')
+    localStorage.removeItem('bloodbankToken')
+    localStorage.removeItem('bloodbank')
     navigate('/blood-bank-login')
   }
 
@@ -221,6 +223,14 @@ const BloodBankDashboard = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-3">
+                <CustomButton
+                  variant="primary"
+                  onClick={() => navigate('/create-event')}
+                  className="text-sm flex items-center space-x-2"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Create Event</span>
+                </CustomButton>
                 <CustomButton
                   variant="outline"
                   onClick={() => navigate('/blood-bank-profile')}
@@ -600,7 +610,16 @@ const BloodBankDashboard = () => {
             <CardDescription>Common tasks and reports</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <CustomButton
+                variant="primary"
+                className="flex items-center justify-center space-x-2 h-16"
+                onClick={() => navigate('/create-event')}
+              >
+                <Calendar className="h-5 w-5" />
+                <span>Create Event</span>
+              </CustomButton>
+
               <CustomButton
                 variant="outline"
                 className="flex items-center justify-center space-x-2 h-16"

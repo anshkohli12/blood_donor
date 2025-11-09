@@ -106,8 +106,8 @@ const BloodBankProfile = () => {
   const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
   useEffect(() => {
-    const bloodBankUser = localStorage.getItem('bloodBankUser')
-    if (!bloodBankUser) {
+    const bloodbankToken = localStorage.getItem('bloodbankToken')
+    if (!bloodbankToken) {
       navigate('/blood-bank-login')
       return
     }
@@ -118,9 +118,9 @@ const BloodBankProfile = () => {
   const loadBloodBankData = async () => {
     try {
       setLoading(true)
-      const userData = JSON.parse(localStorage.getItem('bloodBankUser'))
-      if (userData && userData.bloodBankId) {
-        const response = await bloodBankService.getBloodBankById(userData.bloodBankId)
+      const userData = JSON.parse(localStorage.getItem('bloodbank'))
+      if (userData && userData.id) {
+        const response = await bloodBankService.getBloodBankById(userData.id)
         const data = response.data
         setBloodBank(data)
         
@@ -178,7 +178,8 @@ const BloodBankProfile = () => {
     } catch (error) {
       console.error('Error loading blood bank data:', error)
       if (error.response?.status === 401) {
-        localStorage.removeItem('bloodBankUser')
+        localStorage.removeItem('bloodbankToken')
+        localStorage.removeItem('bloodbank')
         navigate('/blood-bank-login')
       }
     } finally {
@@ -286,7 +287,7 @@ const BloodBankProfile = () => {
   const handleSave = async () => {
     try {
       setSaving(true)
-      const userData = JSON.parse(localStorage.getItem('bloodBankUser'))
+      const userData = JSON.parse(localStorage.getItem('bloodbank'))
       
       // Create FormData for file upload
       const updateData = new FormData()
@@ -299,7 +300,7 @@ const BloodBankProfile = () => {
         updateData.append('profileImage', profileImage)
       }
 
-      await bloodBankService.updateBloodBankProfile(userData.bloodBankId, updateData)
+      await bloodBankService.updateBloodBankProfile(userData.id, updateData)
       
       setEditMode(false)
       await loadBloodBankData()

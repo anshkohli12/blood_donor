@@ -12,6 +12,11 @@ export const donorService = {
     return response.data
   },
 
+  async createDonor(data) {
+    const response = await api.post('/donors', data)
+    return response.data
+  },
+
   async updateDonorProfile(id, data) {
     const response = await api.put(`/donors/${id}`, data)
     return response.data
