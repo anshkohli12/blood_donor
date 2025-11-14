@@ -52,6 +52,33 @@ const contactMessageSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  adminResponse: {
+    message: String,
+    respondedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    respondedAt: Date,
+    isUserNotified: {
+      type: Boolean,
+      default: false
+    }
+  },
+  statusHistory: [{
+    status: {
+      type: String,
+      enum: ['pending', 'in-progress', 'resolved', 'closed']
+    },
+    changedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    changedAt: {
+      type: Date,
+      default: Date.now
+    },
+    note: String
+  }],
   isRead: {
     type: Boolean,
     default: false

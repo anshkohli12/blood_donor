@@ -1,16 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import * as yup from "yup"
 import { motion } from "framer-motion"
 import { gsap } from "gsap"
-import { useEffect } from "react"
-import { Droplets, MapPin, Phone, Mail, Calendar, Clock, Heart, User, FileText, Hospital } from "lucide-react"
+import { Droplets, MapPin, Phone, Mail, Calendar, Clock, Heart, User, FileText, Hospital, AlertTriangle } from "lucide-react"
 import FormInput from "../components/FormInput"
 import CustomButton from "../components/CustomButton"
 import { requestService } from "../services/requestService"
+import { bloodBankService } from "../services/bloodBankService"
 import { useAuth } from "../hooks/useAuth"
 
 const schema = yup.object({
@@ -21,20 +21,21 @@ const schema = yup.object({
     .required("Number of units is required")
     .min(1, "At least 1 unit is required")
     .max(10, "Maximum 10 units allowed"),
+  bloodBankId: yup.string().required("Please select a blood bank"),
   hospitalName: yup.string().required("Hospital name is required"),
   hospitalAddress: yup.string().required("Hospital address is required"),
   city: yup.string().required("City is required"),
   state: yup.string().required("State is required"),
   zipCode: yup
     .string()
-    .required("ZIP code is required")
-    .matches(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
+    .required("PIN code is required")
+    .matches(/^\d{6}$/, "PIN code must be 6 digits"),
   patientName: yup.string().required("Patient name is required"),
   contactName: yup.string().required("Contact person name is required"),
   contactPhone: yup
     .string()
     .required("Contact phone is required")
-    .matches(/^$$\d{3}$$ \d{3}-\d{4}$/, "Phone format: (123) 456-7890"),
+    .matches(/^[0-9]{10}$/, "Phone must be 10 digits"),
   contactEmail: yup.string().required("Contact email is required").email("Invalid email format"),
   medicalCondition: yup.string().required("Medical condition is required"),
   additionalNotes: yup.string(),
@@ -45,6 +46,8 @@ const RequestBlood = () => {
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [bloodBanks, setBloodBanks] = useState([])
+  const [loadingBanks, setLoadingBanks] = useState(true)
 
   const {
     register,
@@ -64,7 +67,22 @@ const RequestBlood = () => {
 
   useEffect(() => {
     gsap.fromTo(".request-form", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out" })
+    fetchBloodBanks()
   }, [])
+
+  const fetchBloodBanks = async () => {
+    try {
+      setLoadingBanks(true)
+      const response = await bloodBankService.getAllBloodBanks()
+      if (response.success) {
+        setBloodBanks(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching blood banks:', error)
+    } finally {
+      setLoadingBanks(false)
+    }
+  }
 
   const onSubmit = async (data) => {
     setIsSubmitting(true)
@@ -88,19 +106,9 @@ const RequestBlood = () => {
     }
   }
 
-  const formatPhoneNumber = (value) => {
-    const phoneNumber = value.replace(/[^\d]/g, "")
-    const phoneNumberLength = phoneNumber.length
-    if (phoneNumberLength < 4) return phoneNumber
-    if (phoneNumberLength < 7) {
-      return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`
-    }
-    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`
-  }
-
   const getUrgencyColor = (level) => {
     switch (level) {
-      case "critical":
+      case "urgent":
         return "text-red-600 bg-red-100"
       case "high":
         return "text-orange-600 bg-orange-100"
@@ -216,7 +224,7 @@ const RequestBlood = () => {
                       <option value="low">Low - Within 1 week</option>
                       <option value="medium">Medium - Within 3 days</option>
                       <option value="high">High - Within 24 hours</option>
-                      <option value="critical">Critical - Immediate</option>
+                      <option value="urgent">Urgent - Immediate (Blood Bank Notified)</option>
                     </select>
                     {urgency && (
                       <div
@@ -238,6 +246,36 @@ const RequestBlood = () => {
                     error={errors.unitsNeeded?.message}
                     {...register("unitsNeeded")}
                   />
+                </div>
+
+                {/* Blood Bank Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Blood Bank <span className="text-blood-crimson">*</span>
+                  </label>
+                  <select
+                    {...register("bloodBankId")}
+                    className={`block w-full rounded-lg border-gray-300 shadow-sm focus:border-blood-crimson focus:ring-blood-crimson py-3 px-3 ${
+                      errors.bloodBankId ? "border-red-500" : ""
+                    }`}
+                    disabled={loadingBanks}
+                  >
+                    <option value="">
+                      {loadingBanks ? "Loading blood banks..." : "Select a blood bank"}
+                    </option>
+                    {bloodBanks.map((bank) => (
+                      <option key={bank._id} value={bank._id}>
+                        {bank.name} - {bank.city}, {bank.state}
+                      </option>
+                    ))}
+                  </select>
+                  {urgency === 'urgent' && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>The selected blood bank will be notified immediately of this urgent request</span>
+                    </div>
+                  )}
+                  {errors.bloodBankId && <p className="text-sm text-red-600 mt-1">{errors.bloodBankId.message}</p>}
                 </div>
 
                 <FormInput
@@ -319,15 +357,11 @@ const RequestBlood = () => {
                   <FormInput
                     label="Contact Phone"
                     type="tel"
-                    placeholder="(123) 456-7890"
+                    placeholder="9876543210"
                     icon={Phone}
                     required
                     error={errors.contactPhone?.message}
-                    {...register("contactPhone", {
-                      onChange: (e) => {
-                        e.target.value = formatPhoneNumber(e.target.value)
-                      },
-                    })}
+                    {...register("contactPhone")}
                   />
 
                   <FormInput

@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { Search, Filter, Phone, Clock, User, AlertCircle } from "lucide-react"
 import DonorCard from "../components/DonorCard"
 import CustomButton from "../components/CustomButton"
+import { donorService } from "../services/donorService"
 
 const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
 
@@ -21,147 +22,116 @@ const FindDonors = () => {
   const [isSearching, setIsSearching] = useState(false)
   const [donors, setDonors] = useState([])
   const [searchError, setSearchError] = useState("")
+  const [loading, setLoading] = useState(true)
 
-  // Mock donors data for demonstration
-  const mockDonors = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      bloodType: "O+",
-      city: "New York",
-      state: "NY",
-      isAvailable: true,
-      lastDonation: "2024-01-15",
-      totalDonations: 12,
-      phone: "+1 (555) 123-4567",
-      email: "sarah.j@email.com",
-      distance: 2.5,
-      avatar: "/placeholder.svg?key=donor1",
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      bloodType: "A+",
-      city: "Los Angeles",
-      state: "CA",
-      isAvailable: true,
-      lastDonation: "2024-02-20",
-      totalDonations: 8,
-      phone: "+1 (555) 234-5678",
-      email: "michael.c@email.com",
-      distance: 5.2,
-      avatar: "/placeholder.svg?key=donor2",
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      bloodType: "B-",
-      city: "Chicago",
-      state: "IL",
-      isAvailable: true,
-      lastDonation: "2024-01-30",
-      totalDonations: 15,
-      phone: "+1 (555) 345-6789",
-      email: "emily.r@email.com",
-      distance: 8.7,
-      avatar: "/placeholder.svg?key=donor3",
-    },
-    {
-      id: 4,
-      name: "David Wilson",
-      bloodType: "AB+",
-      city: "Houston",
-      state: "TX",
-      isAvailable: false,
-      lastDonation: "2024-03-01",
-      totalDonations: 6,
-      phone: "+1 (555) 456-7890",
-      email: "david.w@email.com",
-      distance: 12.3,
-      avatar: "/placeholder.svg?key=donor4",
-    },
-    {
-      id: 5,
-      name: "Lisa Thompson",
-      bloodType: "O-",
-      city: "Phoenix",
-      state: "AZ",
-      isAvailable: true,
-      lastDonation: "2024-02-10",
-      totalDonations: 20,
-      phone: "+1 (555) 567-8901",
-      email: "lisa.t@email.com",
-      distance: 15.8,
-      avatar: "/placeholder.svg?key=donor5",
-    },
-    {
-      id: 6,
-      name: "James Martinez",
-      bloodType: "A-",
-      city: "Philadelphia",
-      state: "PA",
-      isAvailable: true,
-      lastDonation: "2024-01-25",
-      totalDonations: 9,
-      phone: "+1 (555) 678-9012",
-      email: "james.m@email.com",
-      distance: 18.4,
-      avatar: "/placeholder.svg?key=donor6",
-    },
-  ]
-
+  // Fetch donors from API
   useEffect(() => {
-    // Initialize with mock data
-    setDonors(mockDonors)
+    fetchDonors()
   }, [])
+
+  const fetchDonors = async () => {
+    try {
+      setLoading(true)
+      setSearchError("")
+      const response = await donorService.getAllDonors({ limit: 100 })
+      
+      if (response.success) {
+        // Map API data to match the expected format
+        const mappedDonors = response.data.map(donor => ({
+          id: donor._id,
+          name: donor.name || `${donor.firstName} ${donor.lastName}`,
+          bloodType: donor.bloodType,
+          city: donor.city || donor.address?.city || "N/A",
+          state: donor.state || donor.address?.state || "N/A",
+          isAvailable: donor.isAvailable !== undefined ? donor.isAvailable : true,
+          lastDonation: donor.lastDonationDate || donor.lastDonation || null,
+          totalDonations: donor.donationCount || donor.totalDonations || 0,
+          phone: donor.phone || donor.phoneNumber || "N/A",
+          email: donor.email || "N/A",
+          distance: 0, // Can be calculated if location data is available
+          avatar: donor.avatar || "/placeholder-user.jpg",
+        }))
+        setDonors(mappedDonors)
+      }
+    } catch (error) {
+      console.error('Error fetching donors:', error)
+      setSearchError('Failed to load donors. Please try again.')
+      setDonors([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSearch = async () => {
     setIsSearching(true)
     setSearchError("")
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      let filteredDonors = mockDonors
-
-      // Apply filters
+      // Fetch fresh data from API with filters
+      const apiFilters = {}
       if (filters.bloodType) {
-        filteredDonors = filteredDonors.filter((donor) => donor.bloodType === filters.bloodType)
+        apiFilters.bloodType = filters.bloodType
       }
 
-      if (filters.city) {
-        filteredDonors = filteredDonors.filter((donor) => donor.city.toLowerCase().includes(filters.city.toLowerCase()))
-      }
+      const response = await donorService.getAllDonors({ ...apiFilters, limit: 100 })
+      
+      if (response.success) {
+        let filteredDonors = response.data.map(donor => ({
+          id: donor._id,
+          name: donor.name || `${donor.firstName} ${donor.lastName}`,
+          bloodType: donor.bloodType,
+          city: donor.city || donor.address?.city || "N/A",
+          state: donor.state || donor.address?.state || "N/A",
+          isAvailable: donor.isAvailable !== undefined ? donor.isAvailable : true,
+          lastDonation: donor.lastDonationDate || donor.lastDonation || null,
+          totalDonations: donor.donationCount || donor.totalDonations || 0,
+          phone: donor.phone || donor.phoneNumber || "N/A",
+          email: donor.email || "N/A",
+          distance: 0,
+          avatar: donor.avatar || "/placeholder-user.jpg",
+        }))
 
-      if (filters.state) {
-        filteredDonors = filteredDonors.filter((donor) =>
-          donor.state.toLowerCase().includes(filters.state.toLowerCase()),
-        )
-      }
+        // Apply client-side filters
+        if (filters.city) {
+          filteredDonors = filteredDonors.filter((donor) => 
+            donor.city.toLowerCase().includes(filters.city.toLowerCase())
+          )
+        }
 
-      if (filters.availability === "available") {
-        filteredDonors = filteredDonors.filter((donor) => donor.isAvailable)
-      }
+        if (filters.state) {
+          filteredDonors = filteredDonors.filter((donor) =>
+            donor.state.toLowerCase().includes(filters.state.toLowerCase())
+          )
+        }
 
-      if (searchQuery) {
-        filteredDonors = filteredDonors.filter(
-          (donor) =>
-            donor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            donor.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            donor.bloodType.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
-      }
+        if (filters.availability === "available") {
+          filteredDonors = filteredDonors.filter((donor) => donor.isAvailable)
+        }
 
-      // Sort by distance
-      filteredDonors.sort((a, b) => a.distance - b.distance)
+        if (searchQuery) {
+          filteredDonors = filteredDonors.filter(
+            (donor) =>
+              donor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              donor.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              donor.bloodType.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        }
 
-      setDonors(filteredDonors)
+        // Sort by distance (if available) or by availability
+        filteredDonors.sort((a, b) => {
+          if (a.isAvailable && !b.isAvailable) return -1
+          if (!a.isAvailable && b.isAvailable) return 1
+          return a.distance - b.distance
+        })
 
-      if (filteredDonors.length === 0) {
-        setSearchError("No donors found matching your criteria. Try adjusting your filters.")
+        setDonors(filteredDonors)
+
+        if (filteredDonors.length === 0) {
+          setSearchError("No donors found matching your criteria. Try adjusting your filters.")
+        }
       }
     } catch (error) {
+      console.error('Search error:', error)
       setSearchError("Failed to search donors. Please try again.")
     } finally {
       setIsSearching(false)
@@ -177,7 +147,7 @@ const FindDonors = () => {
       distance: "50",
     })
     setSearchQuery("")
-    setDonors(mockDonors)
+    fetchDonors() // Reload all donors
     setSearchError("")
   }
 
@@ -349,9 +319,10 @@ const FindDonors = () => {
       {/* Donors Grid */}
       <section className="pb-16">
         <div className="container-custom">
-          {isSearching ? (
-            <div className="flex justify-center items-center py-16">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blood-crimson"></div>
+          {loading || isSearching ? (
+            <div className="flex flex-col justify-center items-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blood-crimson mb-4"></div>
+              <p className="text-gray-600">{loading ? 'Loading donors...' : 'Searching...'}</p>
             </div>
           ) : donors.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

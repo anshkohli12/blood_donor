@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { eventService } from '../services/eventService';
 import FormInput from '../components/FormInput';
 import CustomButton from '../components/CustomButton';
-import { Calendar, MapPin, Users, Phone, Mail, FileText, Image as ImageIcon, Clock } from 'lucide-react';
+import { Calendar, MapPin, Users, Phone, Mail, FileText, Image as ImageIcon, Clock, Navigation } from 'lucide-react';
 
 const CreateEvent = () => {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ const CreateEvent = () => {
   const [success, setSuccess] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -79,6 +80,62 @@ const CreateEvent = () => {
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+  };
+
+  const detectLocation = () => {
+    setDetectingLocation(true);
+    setError('');
+
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      setDetectingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          coordinates: {
+            lat: position.coords.latitude.toFixed(6),
+            lng: position.coords.longitude.toFixed(6)
+          }
+        }));
+        setSuccess('Location detected successfully!');
+        setDetectingLocation(false);
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
+      },
+      (error) => {
+        console.error('Error detecting location:', error);
+        let errorMessage = 'Failed to detect location. ';
+        
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Please allow location access in your browser settings.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out.';
+            break;
+          default:
+            errorMessage += 'An unknown error occurred.';
+        }
+        
+        setError(errorMessage);
+        setDetectingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -315,10 +372,21 @@ const CreateEvent = () => {
 
             {/* Coordinates (Optional) */}
             <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-blue-600" />
-                GPS Coordinates (Optional)
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-blue-600" />
+                  GPS Coordinates (Optional)
+                </h3>
+                <button
+                  type="button"
+                  onClick={detectLocation}
+                  disabled={detectingLocation}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed shadow-sm"
+                >
+                  <Navigation className={`h-4 w-4 ${detectingLocation ? 'animate-pulse' : ''}`} />
+                  {detectingLocation ? 'Detecting...' : 'Detect Location'}
+                </button>
+              </div>
               <p className="text-xs text-gray-600 mb-4">Add coordinates to show event location on map</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormInput

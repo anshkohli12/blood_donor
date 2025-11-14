@@ -25,7 +25,10 @@ import AdminEvents from "./pages/AdminEvents"
 import BloodBankLogin from "./pages/BloodBankLogin"
 import BloodBankDashboard from "./pages/BloodBankDashboard"
 import BloodBankProfile from "./pages/BloodBankProfile"
+import BloodBankRequests from "./pages/BloodBankRequests"
 import CreateEvent from "./pages/CreateEvent"
+import EventRegistrations from "./pages/EventRegistrations"
+import MyMessages from "./pages/MyMessages"
 
 function App() {
   return (
@@ -116,6 +119,14 @@ function App() {
             }
           />
           <Route
+            path="/my-messages"
+            element={
+              <MainLayout>
+                <MyMessages />
+              </MainLayout>
+            }
+          />
+          <Route
             path="/dashboard"
             element={
               <MainLayout>
@@ -202,10 +213,24 @@ function App() {
             }
           />
           <Route
+            path="/blood-bank-requests"
+            element={
+              <BloodBankRequests />
+            }
+          />
+          <Route
             path="/create-event"
             element={
               <MainLayout>
                 <CreateEvent />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/events/:eventId/registrations"
+            element={
+              <MainLayout>
+                <EventRegistrations />
               </MainLayout>
             }
           />

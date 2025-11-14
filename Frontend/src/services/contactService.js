@@ -47,4 +47,14 @@ export const contactService = {
     const response = await api.delete(`/contact/messages/${id}`)
     return response.data
   },
+
+  async sendResponse(id, message) {
+    const response = await api.post(`/contact/messages/${id}/response`, { message })
+    return response.data
+  },
+
+  async getMyMessages(email) {
+    const response = await api.get(`/contact/my-messages/${email}`)
+    return response.data
+  },
 }

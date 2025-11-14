@@ -9,6 +9,7 @@ const Footer = () => {
     { name: "Find Donors", path: "/find-donors" },
     { name: "Blood Banks", path: "/blood-banks" },
     { name: "Events", path: "/events" },
+    { name: "My Messages", path: "/my-messages" },
     { name: "Contact", path: "/contact" },
   ]
 

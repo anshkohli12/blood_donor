@@ -40,6 +40,8 @@ const AdminContactMessages = () => {
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [newNote, setNewNote] = useState("")
   const [addingNote, setAddingNote] = useState(false)
+  const [adminResponse, setAdminResponse] = useState("")
+  const [sendingResponse, setSendingResponse] = useState(false)
 
   // Fetch all messages
   const fetchMessages = async () => {
@@ -132,6 +134,33 @@ const AdminContactMessages = () => {
       console.error('Error adding note:', error)
     } finally {
       setAddingNote(false)
+    }
+  }
+
+  // Send admin response
+  const handleSendResponse = async (e) => {
+    e.preventDefault()
+    if (!adminResponse.trim()) return
+    
+    if (adminResponse.trim().length < 10) {
+      alert('Response must be at least 10 characters long')
+      return
+    }
+
+    try {
+      setSendingResponse(true)
+      const response = await contactService.sendResponse(selectedMessage._id, adminResponse)
+      if (response.success) {
+        setSelectedMessage(response.data)
+        setAdminResponse("")
+        fetchMessages()
+        alert('Response sent successfully! User will be able to see it.')
+      }
+    } catch (error) {
+      console.error('Error sending response:', error)
+      alert('Failed to send response')
+    } finally {
+      setSendingResponse(false)
     }
   }
 
@@ -318,6 +347,116 @@ const AdminContactMessages = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Admin Response to User */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Send className="h-5 w-5 text-blood-crimson" />
+                    <span>Response to User</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Send a response that the user can see when they check their messages
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {selectedMessage.adminResponse?.message ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-xs font-medium text-green-800">Response Sent</span>
+                        <span className="text-xs text-green-600">
+                          {new Date(selectedMessage.adminResponse.respondedAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 mb-2">{selectedMessage.adminResponse.message}</p>
+                      <div className="text-xs text-gray-600">
+                        By: {selectedMessage.adminResponse.respondedBy?.firstName} {selectedMessage.adminResponse.respondedBy?.lastName}
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSendResponse} className="space-y-3">
+                      <div>
+                        <textarea
+                          value={adminResponse}
+                          onChange={(e) => setAdminResponse(e.target.value)}
+                          placeholder="Type your response to the user here... (minimum 10 characters)"
+                          className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blood-crimson focus:ring-blood-crimson resize-none"
+                          rows={4}
+                          required
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          {adminResponse.trim().length} / 2000 characters 
+                          {adminResponse.trim().length < 10 && adminResponse.trim().length > 0 && (
+                            <span className="text-red-600 ml-2">
+                              (Minimum 10 characters required)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <CustomButton
+                        type="submit"
+                        variant="primary"
+                        size="sm"
+                        loading={sendingResponse}
+                        icon={Send}
+                        disabled={!adminResponse.trim() || adminResponse.trim().length < 10}
+                      >
+                        Send Response to User
+                      </CustomButton>
+                    </form>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Status History */}
+              {selectedMessage.statusHistory && selectedMessage.statusHistory.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Clock className="h-5 w-5 text-blood-crimson" />
+                      <span>Status History</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {selectedMessage.statusHistory.map((history, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex items-start space-x-3 pb-3 border-b border-gray-200 last:border-0"
+                        >
+                          <div className={`mt-1 p-1.5 rounded-full ${
+                            history.status === 'resolved' ? 'bg-green-100' :
+                            history.status === 'in-progress' ? 'bg-blue-100' :
+                            history.status === 'closed' ? 'bg-gray-100' :
+                            'bg-yellow-100'
+                          }`}>
+                            {history.status === 'resolved' ? <CheckCircle className="h-4 w-4 text-green-600" /> :
+                             history.status === 'in-progress' ? <Clock3 className="h-4 w-4 text-blue-600" /> :
+                             history.status === 'closed' ? <XCircle className="h-4 w-4 text-gray-600" /> :
+                             <AlertCircle className="h-4 w-4 text-yellow-600" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-gray-900 capitalize">{history.status.replace('-', ' ')}</span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(history.changedAt).toLocaleString()}
+                              </span>
+                            </div>
+                            {history.note && (
+                              <p className="text-sm text-gray-600 mt-1">{history.note}</p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              By: {history.changedBy?.firstName} {history.changedBy?.lastName}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Admin Notes */}
               <Card>

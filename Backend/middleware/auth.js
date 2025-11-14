@@ -75,8 +75,57 @@ const requireOwnershipOrAdmin = (idParam = 'id') => {
   };
 };
 
+// Middleware to authenticate blood bank specifically
+const authenticateBloodBank = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access token required'
+      });
+    }
+
+    // Decode the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Check if it's a blood bank token
+    if (decoded.type !== 'bloodbank') {
+      return res.status(403).json({
+        success: false,
+        message: 'Blood bank access required'
+      });
+    }
+
+    // Get blood bank details
+    const bloodBank = await BloodBank.findById(decoded.id);
+    if (!bloodBank) {
+      return res.status(404).json({
+        success: false,
+        message: 'Blood bank not found'
+      });
+    }
+
+    req.bloodBank = {
+      _id: bloodBank._id,
+      name: bloodBank.name,
+      email: bloodBank.email,
+      ...decoded
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token'
+    });
+  }
+};
+
 module.exports = {
   authenticateToken,
   requireAdmin,
-  requireOwnershipOrAdmin
+  requireOwnershipOrAdmin,
+  authenticateBloodBank
 };

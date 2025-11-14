@@ -36,4 +36,21 @@ export const requestService = {
     const response = await api.get("/requests/my-requests")
     return response.data
   },
+
+  // Blood bank specific methods
+  async getBloodBankRequests(filters = {}) {
+    const params = new URLSearchParams(filters)
+    const response = await api.get(`/requests/blood-bank/requests?${params}`)
+    return response.data
+  },
+
+  async getUrgentRequests() {
+    const response = await api.get("/requests/blood-bank/urgent")
+    return response.data
+  },
+
+  async updateRequestStatus(id, status, note = '') {
+    const response = await api.put(`/requests/${id}/status`, { status, note })
+    return response.data
+  },
 }

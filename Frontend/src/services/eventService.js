@@ -233,6 +233,29 @@ export const eventService = {
     }
   },
 
+  // Get registered users for a specific event (Blood Bank/Admin only)
+  async getEventRegistrations(eventId) {
+    try {
+      const token = localStorage.getItem('bloodbankToken') || localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(
+        `${API_BASE_URL}/events/${eventId}/registrations`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching event registrations:', error);
+      throw error.response?.data || { message: 'Failed to fetch event registrations' };
+    }
+  },
+
   // ADMIN API (Requires Admin Authentication)
 
   // Get all events including pending (Admin only)

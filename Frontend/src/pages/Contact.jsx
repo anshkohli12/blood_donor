@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
+import { Link } from "react-router-dom"
 import {
   Phone,
   Mail,
@@ -121,14 +122,24 @@ const Contact = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Message Sent Successfully!</h2>
               <p className="text-gray-600 mb-6">
                 Thank you for contacting us. We've received your message and will get back to you within 24 hours.
+                You can check the status and view responses on your messages page.
               </p>
-              <CustomButton
-                onClick={() => setSuccess(false)}
-                variant="primary"
-                icon={MessageSquare}
-              >
-                Send Another Message
-              </CustomButton>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/my-messages">
+                  <CustomButton
+                    variant="primary"
+                    icon={MessageSquare}
+                  >
+                    View My Messages
+                  </CustomButton>
+                </Link>
+                <CustomButton
+                  onClick={() => setSuccess(false)}
+                  variant="outline"
+                >
+                  Send Another Message
+                </CustomButton>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -143,12 +154,19 @@ const Contact = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
           <h1 className="text-4xl font-bold font-montserrat text-gradient mb-4">Contact Us</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-4">
             Get in touch with our team. We're here to help you save lives and make a difference in your community.
           </p>
+          <Link
+            to="/my-messages"
+            className="inline-flex items-center gap-2 text-blood-crimson hover:text-blood-light transition-colors font-medium"
+          >
+            <MessageSquare className="h-5 w-5" />
+            View Your Messages & Responses
+          </Link>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

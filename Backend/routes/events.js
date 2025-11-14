@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const Event = require('../models/Event')
+const User = require('../models/User')
 const { authenticateToken, requireAdmin } = require('../middleware/auth')
 const multer = require('multer')
 const path = require('path')
@@ -441,6 +442,100 @@ router.get('/my-registrations/list', authenticateToken, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error fetching registrations',
+      error: error.message 
+    })
+  }
+})
+
+// Get registrations for a specific event (Blood Bank/Admin only)
+router.get('/:id/registrations', authenticateToken, async (req, res) => {
+  try {
+    console.log('Fetching registrations for event:', req.params.id)
+    console.log('User info:', { id: req.user.id, type: req.user.type, role: req.user.role })
+    
+    // Use lean() and manually fetch user details via the project's UserModel
+    const event = await Event.findById(req.params.id).lean()
+    
+    if (!event) {
+      console.log('Event not found:', req.params.id)
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      })
+    }
+
+    console.log('Event found:', event.title)
+    console.log('Event organizer:', event.organizer)
+    console.log('Registrations count:', event.registrations?.length || 0)
+
+    // Check if user is the organizer or admin
+    // Blood bank users can have type 'bloodbank' or might be stored differently
+    const isOrganizer = (req.user.type === 'bloodbank' || req.user.type === 'bloodBank') && 
+                       event.organizer.toString() === req.user.id
+    const isAdmin = req.user.role === 'admin'
+
+    console.log('Authorization check:', { isOrganizer, isAdmin })
+
+    if (!isOrganizer && !isAdmin) {
+      console.log('Access denied for user:', req.user.id)
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only event organizer or admin can view registrations'
+      })
+    }
+
+    // registrations from Mongoose (lean) are plain objects with userId as ObjectId
+    const registrations = event.registrations || []
+
+    // Collect unique user ids and fetch details using the User model (project's UserModel)
+    const userIds = registrations
+      .map(r => r.userId)
+      .filter(Boolean)
+      .map(id => id.toString())
+
+    const uniqueUserIds = [...new Set(userIds)]
+
+    const usersMap = {}
+    if (uniqueUserIds.length > 0) {
+      // User is a custom class instance exported from ../models/User
+      // It exposes getUserById(id) which returns a plain user object
+      await Promise.all(uniqueUserIds.map(async (id) => {
+        try {
+          const u = await User.getUserById(id)
+          if (u) usersMap[id] = u
+        } catch (e) {
+          console.warn('Failed to fetch user for id', id, e.message)
+        }
+      }))
+    }
+
+    const enriched = registrations.map(reg => ({
+      _id: reg._id,
+      registeredAt: reg.registeredAt,
+      status: reg.status,
+      userId: reg.userId ? (usersMap[reg.userId.toString()] || null) : null
+    }))
+
+    const validRegistrations = enriched.filter(r => r.userId != null)
+
+    console.log('Access granted, sending', validRegistrations.length, 'valid registrations')
+
+    res.json({
+      success: true,
+      data: {
+        eventId: event._id,
+        eventTitle: event.title,
+        maxCapacity: event.maxCapacity,
+        registeredCount: validRegistrations.length,
+        registrations: validRegistrations
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching event registrations:', error)
+    console.error('Error stack:', error.stack)
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching event registrations',
       error: error.message 
     })
   }

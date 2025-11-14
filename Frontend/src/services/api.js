@@ -15,7 +15,12 @@ api.interceptors.request.use(
     // Check for regular user token
     let token = localStorage.getItem("token")
     
-    // Check for blood bank user token
+    // Check for blood bank token (stored as 'bloodbankToken')
+    if (!token) {
+      token = localStorage.getItem("bloodbankToken")
+    }
+    
+    // Fallback: check for blood bank user object
     if (!token) {
       const bloodBankUser = localStorage.getItem("bloodBankUser")
       if (bloodBankUser) {
@@ -43,8 +48,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Clear all auth tokens
       localStorage.removeItem("token")
-      window.location.href = "/login"
+      localStorage.removeItem("bloodbankToken")
+      localStorage.removeItem("bloodbank")
+      
+      // Redirect based on current path
+      if (window.location.pathname.includes('blood-bank')) {
+        window.location.href = "/blood-bank-login"
+      } else {
+        window.location.href = "/login"
+      }
     }
     return Promise.reject(error)
   },

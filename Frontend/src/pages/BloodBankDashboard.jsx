@@ -28,6 +28,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
 import CustomButton from "../components/CustomButton"
 import { bloodBankService } from "../services/bloodBankService"
+import { eventService } from "../services/eventService"
+import { requestService } from "../services/requestService"
 
 const BloodBankDashboard = () => {
   const navigate = useNavigate()
@@ -36,6 +38,9 @@ const BloodBankDashboard = () => {
   const [editingStock, setEditingStock] = useState(false)
   const [stockUpdates, setStockUpdates] = useState({})
   const [stockHistory, setStockHistory] = useState([])
+  const [myEvents, setMyEvents] = useState([])
+  const [loadingEvents, setLoadingEvents] = useState(false)
+  const [urgentRequestsCount, setUrgentRequestsCount] = useState(0)
   const [stats, setStats] = useState({
     totalUnits: 0,
     lowStockTypes: 0,
@@ -55,7 +60,20 @@ const BloodBankDashboard = () => {
 
     loadBloodBankData()
     loadStockHistory()
+    loadMyEvents()
+    loadUrgentRequests()
   }, [navigate])
+
+  const loadUrgentRequests = async () => {
+    try {
+      const response = await requestService.getUrgentRequests()
+      if (response.success) {
+        setUrgentRequestsCount(response.data.length)
+      }
+    } catch (error) {
+      console.error('Error loading urgent requests:', error)
+    }
+  }
 
   const loadBloodBankData = async () => {
     try {
@@ -115,6 +133,22 @@ const BloodBankDashboard = () => {
     }
   }
 
+  const loadMyEvents = async () => {
+    try {
+      setLoadingEvents(true)
+      const response = await eventService.getMyEvents()
+      
+      if (response.success) {
+        // Get only the latest 3 events
+        setMyEvents(response.data.slice(0, 3))
+      }
+    } catch (error) {
+      console.error('Error loading events:', error)
+    } finally {
+      setLoadingEvents(false)
+    }
+  }
+
   const handleStockUpdate = async () => {
     try {
       const userData = JSON.parse(localStorage.getItem('bloodbank'))
@@ -170,6 +204,33 @@ const BloodBankDashboard = () => {
     return { text: 'Good Stock', color: 'text-green-600' }
   }
 
+  const formatEventDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const getEventStatus = (event) => {
+    const now = new Date()
+    const startDate = new Date(event.startDate)
+    const endDate = new Date(event.endDate)
+    
+    if (now < startDate) return { text: 'Upcoming', color: 'bg-blue-100 text-blue-700' }
+    if (now >= startDate && now <= endDate) return { text: 'Ongoing', color: 'bg-green-100 text-green-700' }
+    return { text: 'Completed', color: 'bg-gray-100 text-gray-700' }
+  }
+
+  const getApprovalStatus = (event) => {
+    const statusMap = {
+      'approved': { text: '✓ Approved', color: 'bg-green-100 text-green-800 border-green-200' },
+      'pending': { text: '⏳ Pending Review', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+      'rejected': { text: '✗ Rejected', color: 'bg-red-100 text-red-800 border-red-200' }
+    }
+    return statusMap[event.status] || statusMap['pending']
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -223,6 +284,21 @@ const BloodBankDashboard = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <CustomButton
+                    variant="primary"
+                    onClick={() => navigate('/blood-bank-requests')}
+                    className="text-sm flex items-center space-x-2"
+                  >
+                    <Activity className="h-4 w-4" />
+                    <span>Blood Requests</span>
+                  </CustomButton>
+                  {urgentRequestsCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                      {urgentRequestsCount}
+                    </span>
+                  )}
+                </div>
                 <CustomButton
                   variant="primary"
                   onClick={() => navigate('/create-event')}
@@ -477,57 +553,220 @@ const BloodBankDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* My Events Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center space-x-2">
+                  <Calendar className="h-5 w-5" />
+                  <span>My Events</span>
+                </CardTitle>
+                <CardDescription>
+                  Events you have created and their registrations
+                </CardDescription>
+              </div>
+              <CustomButton
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/events')}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View All Events
+              </CustomButton>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingEvents ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blood-crimson mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">Loading events...</p>
+              </div>
+            ) : myEvents.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600 mb-4">No events created yet</p>
+                <CustomButton
+                  variant="primary"
+                  onClick={() => navigate('/create-event')}
+                >
+                  Create Your First Event
+                </CustomButton>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myEvents.map((event) => {
+                  const status = getEventStatus(event)
+                  const approvalStatus = getApprovalStatus(event)
+                  const registeredCount = event.registrations?.length || 0
+                  const capacityPercent = (registeredCount / event.maxCapacity) * 100
+                  
+                  return (
+                    <motion.div
+                      key={event._id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {event.title}
+                            </h3>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${approvalStatus.color}`}>
+                              {approvalStatus.text}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                              {status.text}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {event.description?.slice(0, 100)}{event.description?.length > 100 ? '...' : ''}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {formatEventDate(event.startDate)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {event.location.city}, {event.location.state}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 mr-4">
+                          <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+                            <span>Registrations</span>
+                            <span className="font-medium">
+                              {registeredCount} / {event.maxCapacity}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all ${
+                                capacityPercent >= 90 ? 'bg-red-500' :
+                                capacityPercent >= 70 ? 'bg-yellow-500' :
+                                'bg-green-500'
+                              }`}
+                              style={{ width: `${Math.min(capacityPercent, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <CustomButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => navigate(`/events/${event._id}/registrations`)}
+                          className="flex items-center gap-2"
+                        >
+                          <Users className="h-4 w-4" />
+                          View Registrations
+                        </CustomButton>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Blood Bank Information */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Contact & Location */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <MapPin className="h-5 w-5" />
+                <MapPin className="h-5 w-5 text-blood-crimson" />
                 <span>Location & Contact</span>
               </CardTitle>
+              <CardDescription>
+                How to reach and visit us
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="font-medium text-gray-900">Address</p>
-                  <p className="text-sm text-gray-600">
-                    {bloodBank.address.street}<br />
-                    {bloodBank.address.city}, {bloodBank.address.state} {bloodBank.address.zipCode}
+            <CardContent className="space-y-6">
+              <div className="flex items-start space-x-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg flex-shrink-0">
+                  <MapPin className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">Address</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {bloodBank.address?.street || 'N/A'}<br />
+                    {bloodBank.address?.city}, {bloodBank.address?.state} {bloodBank.address?.zipCode}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <Phone className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="font-medium text-gray-900">Phone</p>
-                  <p className="text-sm text-gray-600">{bloodBank.contact.phone}</p>
+              <div className="flex items-start space-x-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-lg flex-shrink-0">
+                  <Phone className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">Phone</p>
+                  <a 
+                    href={`tel:${bloodBank.contact?.phone}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {bloodBank.contact?.phone || 'N/A'}
+                  </a>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <Mail className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="font-medium text-gray-900">Email</p>
-                  <p className="text-sm text-gray-600">{bloodBank.email}</p>
+              <div className="flex items-start space-x-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-lg flex-shrink-0">
+                  <Mail className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">Email</p>
+                  <a 
+                    href={`mailto:${bloodBank.email}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline break-all"
+                  >
+                    {bloodBank.email || 'N/A'}
+                  </a>
                 </div>
               </div>
 
-              {bloodBank.contact.website && (
-                <div className="flex items-center space-x-3">
-                  <Eye className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium text-gray-900">Website</p>
+              {bloodBank.contact?.website && (
+                <div className="flex items-start space-x-4">
+                  <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-lg flex-shrink-0">
+                    <Eye className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-1">Website</p>
                     <a 
                       href={bloodBank.contact.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline break-all"
                     >
                       {bloodBank.contact.website}
                     </a>
+                  </div>
+                </div>
+              )}
+
+              {bloodBank.contactPerson && (
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="font-semibold text-gray-900 mb-2">Contact Person</p>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-900">
+                      {bloodBank.contactPerson.name || 'N/A'}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {bloodBank.contactPerson.designation || 'Staff Member'}
+                    </p>
+                    {bloodBank.contactPerson.phone && (
+                      <p className="text-sm text-gray-600">
+                        📱 {bloodBank.contactPerson.phone}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -538,26 +777,37 @@ const BloodBankDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5" />
+                <Clock className="h-5 w-5 text-blood-crimson" />
                 <span>Operating Hours & Services</span>
               </CardTitle>
+              <CardDescription>
+                Our availability and services offered
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div>
-                <p className="font-medium text-gray-900 mb-2">Operating Hours</p>
-                <p className="text-sm text-gray-600">
-                  {bloodBank.operatingHoursDisplay || 'Not specified'}
+                <p className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  Operating Hours
                 </p>
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                  <p className="text-sm text-gray-700">
+                    {bloodBank.operatingHoursDisplay || bloodBank.operatingHours || 'Not specified'}
+                  </p>
+                </div>
               </div>
 
               {bloodBank.services && bloodBank.services.length > 0 && (
                 <div>
-                  <p className="font-medium text-gray-900 mb-2">Services</p>
+                  <p className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-green-600" />
+                    Services Offered
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {bloodBank.services.map(service => (
                       <span
                         key={service}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200"
                       >
                         {service}
                       </span>
@@ -568,33 +818,41 @@ const BloodBankDashboard = () => {
 
               {bloodBank.specialServices && (
                 <div>
-                  <p className="font-medium text-gray-900 mb-2">Special Services</p>
-                  <p className="text-sm text-gray-600">{bloodBank.specialServices}</p>
+                  <p className="font-semibold text-gray-900 mb-3">Special Services</p>
+                  <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
+                    <p className="text-sm text-gray-700">{bloodBank.specialServices}</p>
+                  </div>
                 </div>
               )}
 
-              <div className="pt-4 border-t">
-                <p className="font-medium text-gray-900 mb-2">License Information</p>
-                <p className="text-sm text-gray-600">
-                  License #: {bloodBank.licenseNumber}
+              <div className="pt-4 border-t border-gray-200">
+                <p className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-purple-600" />
+                  License Information
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
+                <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mb-3">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium text-gray-900">License #:</span>{' '}
+                    {bloodBank.licenseNumber || 'N/A'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
                   {bloodBank.isVerified ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Verified
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                      ✓ Verified
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      Pending Verification
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                      ⏳ Pending Verification
                     </span>
                   )}
                   {bloodBank.isActive ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Active
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                      ● Active
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      Inactive
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                      ● Inactive
                     </span>
                   )}
                 </div>

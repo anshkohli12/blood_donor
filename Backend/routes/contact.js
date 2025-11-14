@@ -1,6 +1,7 @@
 const express = require('express')
 const { body, validationResult } = require('express-validator')
 const ContactMessage = require('../models/ContactMessage')
+const User = require('../models/User')
 const { authenticateToken, requireAdmin } = require('../middleware/auth')
 
 const router = express.Router()
@@ -203,15 +204,92 @@ router.get('/messages', authenticateToken, requireAdmin, async (req, res) => {
 // Get single contact message (admin only)
 router.get('/messages/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const message = await ContactMessage.findById(req.params.id)
-      .populate('readBy', 'firstName lastName email')
-      .populate('adminNotes.addedBy', 'firstName lastName email')
+    const message = await ContactMessage.findById(req.params.id).lean()
 
     if (!message) {
       return res.status(404).json({
         success: false,
         message: 'Message not found'
       })
+    }
+
+    // Manually enrich user data
+    const userIds = new Set()
+    
+    if (message.adminResponse?.respondedBy) {
+      userIds.add(message.adminResponse.respondedBy.toString())
+    }
+    
+    if (message.statusHistory) {
+      message.statusHistory.forEach(history => {
+        if (history.changedBy) {
+          userIds.add(history.changedBy.toString())
+        }
+      })
+    }
+
+    if (message.adminNotes) {
+      message.adminNotes.forEach(note => {
+        if (note.addedBy) {
+          userIds.add(note.addedBy.toString())
+        }
+      })
+    }
+
+    if (message.readBy) {
+      message.readBy.forEach(userId => {
+        if (userId) {
+          userIds.add(userId.toString())
+        }
+      })
+    }
+
+    // Fetch all users at once
+    const users = await Promise.all(
+      Array.from(userIds).map(id => User.getUserById(id))
+    )
+    
+    // Create user map
+    const usersMap = {}
+    users.forEach(user => {
+      if (user) {
+        usersMap[user._id.toString()] = {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        }
+      }
+    })
+
+    // Enrich message with user data
+    if (message.adminResponse?.respondedBy) {
+      const userId = message.adminResponse.respondedBy.toString()
+      message.adminResponse.respondedBy = usersMap[userId] || null
+    }
+    
+    if (message.statusHistory) {
+      message.statusHistory = message.statusHistory.map(history => ({
+        ...history,
+        changedBy: history.changedBy 
+          ? usersMap[history.changedBy.toString()] || null 
+          : null
+      }))
+    }
+
+    if (message.adminNotes) {
+      message.adminNotes = message.adminNotes.map(note => ({
+        ...note,
+        addedBy: note.addedBy 
+          ? usersMap[note.addedBy.toString()] || null 
+          : null
+      }))
+    }
+
+    if (message.readBy) {
+      message.readBy = message.readBy
+        .map(userId => usersMap[userId.toString()])
+        .filter(Boolean)
     }
 
     res.json({
@@ -230,7 +308,8 @@ router.get('/messages/:id', authenticateToken, requireAdmin, async (req, res) =>
 // Update contact message status/priority (admin only)
 router.put('/messages/:id', authenticateToken, requireAdmin, [
   body('status').optional().isIn(['pending', 'in-progress', 'resolved', 'closed']),
-  body('priority').optional().isIn(['low', 'medium', 'high', 'urgent'])
+  body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']),
+  body('statusNote').optional().trim()
 ], async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -242,24 +321,117 @@ router.put('/messages/:id', authenticateToken, requireAdmin, [
       })
     }
 
-    const { status, priority } = req.body
+    const { status, priority, statusNote } = req.body
     const updateData = {}
     
     if (status) updateData.status = status
     if (priority) updateData.priority = priority
 
+    // Add to status history if status changed
+    if (status) {
+      const message = await ContactMessage.findById(req.params.id)
+      if (message && message.status !== status) {
+        updateData.$push = {
+          statusHistory: {
+            status,
+            changedBy: req.user._id,
+            changedAt: new Date(),
+            note: statusNote || `Status changed to ${status}`
+          }
+        }
+      }
+    }
+
     const message = await ContactMessage.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true }
-    ).populate('readBy', 'firstName lastName email')
-     .populate('adminNotes.addedBy', 'firstName lastName email')
+    ).lean()
 
     if (!message) {
       return res.status(404).json({
         success: false,
         message: 'Message not found'
       })
+    }
+
+    // Manually enrich user data
+    const userIds = new Set()
+    
+    if (message.adminResponse?.respondedBy) {
+      userIds.add(message.adminResponse.respondedBy.toString())
+    }
+    
+    if (message.statusHistory) {
+      message.statusHistory.forEach(history => {
+        if (history.changedBy) {
+          userIds.add(history.changedBy.toString())
+        }
+      })
+    }
+
+    if (message.adminNotes) {
+      message.adminNotes.forEach(note => {
+        if (note.addedBy) {
+          userIds.add(note.addedBy.toString())
+        }
+      })
+    }
+
+    if (message.readBy) {
+      message.readBy.forEach(userId => {
+        if (userId) {
+          userIds.add(userId.toString())
+        }
+      })
+    }
+
+    // Fetch all users at once
+    const users = await Promise.all(
+      Array.from(userIds).map(id => User.getUserById(id))
+    )
+    
+    // Create user map
+    const usersMap = {}
+    users.forEach(user => {
+      if (user) {
+        usersMap[user._id.toString()] = {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        }
+      }
+    })
+
+    // Enrich message with user data
+    if (message.adminResponse?.respondedBy) {
+      const userId = message.adminResponse.respondedBy.toString()
+      message.adminResponse.respondedBy = usersMap[userId] || null
+    }
+    
+    if (message.statusHistory) {
+      message.statusHistory = message.statusHistory.map(history => ({
+        ...history,
+        changedBy: history.changedBy 
+          ? usersMap[history.changedBy.toString()] || null 
+          : null
+      }))
+    }
+
+    if (message.adminNotes) {
+      message.adminNotes = message.adminNotes.map(note => ({
+        ...note,
+        addedBy: note.addedBy 
+          ? usersMap[note.addedBy.toString()] || null 
+          : null
+      }))
+    }
+
+    if (message.readBy) {
+      message.readBy = message.readBy
+        .map(userId => usersMap[userId.toString()])
+        .filter(Boolean)
     }
 
     res.json({
@@ -287,13 +459,26 @@ router.put('/messages/:id/read', authenticateToken, requireAdmin, async (req, re
         readAt: new Date()
       },
       { new: true }
-    ).populate('readBy', 'firstName lastName email')
+    ).lean()
 
     if (!message) {
       return res.status(404).json({
         success: false,
         message: 'Message not found'
       })
+    }
+
+    // Enrich readBy user data
+    if (message.readBy) {
+      const readByUser = await User.getUserById(message.readBy)
+      if (readByUser) {
+        message.readBy = {
+          _id: readByUser._id,
+          firstName: readByUser.firstName,
+          lastName: readByUser.lastName,
+          email: readByUser.email
+        }
+      }
     }
 
     res.json({
@@ -338,14 +523,60 @@ router.post('/messages/:id/notes', authenticateToken, requireAdmin, [
         }
       },
       { new: true }
-    ).populate('readBy', 'firstName lastName email')
-     .populate('adminNotes.addedBy', 'firstName lastName email')
+    ).lean()
 
     if (!message) {
       return res.status(404).json({
         success: false,
         message: 'Message not found'
       })
+    }
+
+    // Manually enrich user data
+    const userIds = new Set()
+    
+    if (message.readBy) {
+      userIds.add(message.readBy.toString())
+    }
+    
+    if (message.adminNotes) {
+      message.adminNotes.forEach(note => {
+        if (note.addedBy) {
+          userIds.add(note.addedBy.toString())
+        }
+      })
+    }
+
+    // Fetch all users at once
+    const users = await Promise.all(
+      Array.from(userIds).map(id => User.getUserById(id))
+    )
+    
+    // Create user map
+    const usersMap = {}
+    users.forEach(user => {
+      if (user) {
+        usersMap[user._id.toString()] = {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        }
+      }
+    })
+
+    // Enrich message with user data
+    if (message.readBy) {
+      message.readBy = usersMap[message.readBy.toString()] || null
+    }
+    
+    if (message.adminNotes) {
+      message.adminNotes = message.adminNotes.map(note => ({
+        ...note,
+        addedBy: note.addedBy 
+          ? usersMap[note.addedBy.toString()] || null 
+          : null
+      }))
     }
 
     res.json({
@@ -383,6 +614,185 @@ router.delete('/messages/:id', authenticateToken, requireAdmin, async (req, res)
     res.status(500).json({
       success: false,
       message: 'Failed to delete message'
+    })
+  }
+})
+
+// Send admin response to user (admin only)
+router.post('/messages/:id/response', authenticateToken, requireAdmin, [
+  body('message').trim().isLength({ min: 10, max: 2000 }).withMessage('Response must be between 10-2000 characters')
+], async (req, res) => {
+  try {
+    console.log('=== SEND RESPONSE DEBUG ===')
+    console.log('Request body:', req.body)
+    console.log('Message field:', req.body.message)
+    console.log('Message length:', req.body.message?.length)
+    
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array())
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      })
+    }
+
+    const { message: responseMessage } = req.body
+
+    const message = await ContactMessage.findByIdAndUpdate(
+      req.params.id,
+      {
+        adminResponse: {
+          message: responseMessage,
+          respondedBy: req.user._id,
+          respondedAt: new Date(),
+          isUserNotified: true
+        },
+        status: 'resolved' // Automatically mark as resolved when response is sent
+      },
+      { new: true }
+    ).lean()
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      })
+    }
+
+    // Manually enrich respondedBy user data
+    const responderUser = await User.getUserById(req.user._id)
+    if (responderUser && message.adminResponse) {
+      message.adminResponse.respondedBy = {
+        firstName: responderUser.firstName,
+        lastName: responderUser.lastName,
+        email: responderUser.email
+      }
+    }
+
+    // Enrich status history changedBy
+    if (message.statusHistory && message.statusHistory.length > 0) {
+      const userIds = [...new Set(message.statusHistory
+        .map(h => h.changedBy?.toString())
+        .filter(Boolean))]
+      
+      const users = await Promise.all(userIds.map(id => User.getUserById(id)))
+      const usersMap = {}
+      users.forEach(user => {
+        if (user) {
+          usersMap[user._id.toString()] = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email
+          }
+        }
+      })
+
+      message.statusHistory = message.statusHistory.map(history => ({
+        ...history,
+        changedBy: history.changedBy 
+          ? usersMap[history.changedBy.toString()] || null 
+          : null
+      }))
+    }
+
+    res.json({
+      success: true,
+      message: 'Response sent successfully',
+      data: message
+    })
+  } catch (error) {
+    console.error('Send admin response error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send response'
+    })
+  }
+})
+
+// Get user's own contact messages by email (public - requires email verification)
+router.get('/my-messages/:email', async (req, res) => {
+  try {
+    const { email } = req.params
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid email is required'
+      })
+    }
+
+    // Get messages without populate (using lean for plain objects)
+    const messages = await ContactMessage.find({ 
+      email: email.toLowerCase() 
+    })
+      .select('firstName lastName email subject message status priority adminResponse statusHistory createdAt updatedAt')
+      .lean()
+      .sort({ createdAt: -1 })
+
+    // Manually enrich user data
+    const userIds = new Set()
+    
+    messages.forEach(msg => {
+      if (msg.adminResponse?.respondedBy) {
+        userIds.add(msg.adminResponse.respondedBy.toString())
+      }
+      if (msg.statusHistory) {
+        msg.statusHistory.forEach(history => {
+          if (history.changedBy) {
+            userIds.add(history.changedBy.toString())
+          }
+        })
+      }
+    })
+
+    // Fetch all users at once
+    const users = await Promise.all(
+      Array.from(userIds).map(id => User.getUserById(id))
+    )
+    
+    // Create user map
+    const usersMap = {}
+    users.forEach(user => {
+      if (user) {
+        usersMap[user._id.toString()] = {
+          firstName: user.firstName,
+          lastName: user.lastName
+        }
+      }
+    })
+
+    // Enrich messages with user data
+    const enrichedMessages = messages.map(msg => {
+      const enriched = { ...msg }
+      
+      if (enriched.adminResponse?.respondedBy) {
+        const userId = enriched.adminResponse.respondedBy.toString()
+        enriched.adminResponse.respondedBy = usersMap[userId] || null
+      }
+      
+      if (enriched.statusHistory) {
+        enriched.statusHistory = enriched.statusHistory.map(history => ({
+          ...history,
+          changedBy: history.changedBy 
+            ? usersMap[history.changedBy.toString()] || null 
+            : null
+        }))
+      }
+      
+      return enriched
+    })
+
+    res.json({
+      success: true,
+      data: enrichedMessages
+    })
+  } catch (error) {
+    console.error('Get user messages error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch messages'
     })
   }
 })
