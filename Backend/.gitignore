@@ -38,6 +38,11 @@ jspm_packages/
 .node_repl_history
 
 # Output of 'npm pack'
+
+# Unnecessary files and folders
+test-login.json
+test-user.json
+Backend.zip
 *.tgz
 
 # Yarn Integrity file

@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator')
 const ContactMessage = require('../models/ContactMessage')
 const User = require('../models/User')
 const { authenticateToken, requireAdmin } = require('../middleware/auth')
+const { sendEmail } = require('../services/emailService')
 
 const router = express.Router()
 
@@ -669,6 +670,43 @@ router.post('/messages/:id/response', authenticateToken, requireAdmin, [
         lastName: responderUser.lastName,
         email: responderUser.email
       }
+    }
+
+    // Send email notification to user
+    try {
+      const emailData = {
+        userEmail: message.email,
+        userName: `${message.firstName} ${message.lastName}`,
+        subject: message.subject,
+        originalMessage: message.message,
+        submittedDate: new Date(message.createdAt).toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        adminResponse: responseMessage,
+        respondedBy: `${responderUser.firstName} ${responderUser.lastName}`,
+        responseDate: new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      };
+
+      const emailResult = await sendEmail('contactResponse', emailData);
+      
+      if (emailResult.success) {
+        console.log('✅ Email sent successfully to:', message.email);
+      } else {
+        console.warn('⚠️ Email failed to send:', emailResult.error || emailResult.message);
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending email:', emailError);
+      // Don't fail the request if email fails
     }
 
     // Enrich status history changedBy

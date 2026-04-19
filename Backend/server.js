@@ -115,6 +115,13 @@ async function startServer() {
     // Connect to MongoDB first
     await dbConnection.connect();
     
+    // Verify email configuration (non-blocking)
+    const { verifyEmailConfig } = require('./services/emailService');
+    verifyEmailConfig().catch(err => {
+      console.warn('⚠️ Email service not configured properly. Email notifications will be disabled.');
+      console.warn('   To enable emails, add EMAIL_USER and EMAIL_PASSWORD to .env file');
+    });
+    
     // Start the server
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
