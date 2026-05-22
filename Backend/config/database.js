@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-require('dotenv').config();
 
 class DatabaseConnection {
   constructor() {
@@ -29,15 +28,17 @@ class DatabaseConnection {
     });
   }
 
-  async connect() {
+  async connect(uri) {
     try {
+      const connectionUri = uri || process.env.MONGODB_URI;
+      
       if (this.isConnected) {
         console.log('Already connected to MongoDB');
         return;
       }
 
       console.log('Connecting to MongoDB...');
-      console.log('Database URL:', process.env.MONGODB_URI);
+      console.log('Database URL:', connectionUri);
 
       // Configure Mongoose options
       const options = {
@@ -48,7 +49,7 @@ class DatabaseConnection {
         heartbeatFrequencyMS: 10000, // Send a ping every 10 seconds
       };
 
-      await mongoose.connect(process.env.MONGODB_URI, options);
+      await mongoose.connect(connectionUri, options);
       
       this.isConnected = true;
       console.log('✅ Successfully connected to MongoDB with Mongoose!');

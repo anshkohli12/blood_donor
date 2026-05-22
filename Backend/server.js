@@ -1,6 +1,6 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 
 const dbConnection = require('./config/database');
 
@@ -113,7 +113,7 @@ app.use((req, res) => {
 async function startServer() {
   try {
     // Connect to MongoDB first
-    await dbConnection.connect();
+    await dbConnection.connect(process.env.MONGODB_URI);
     
     // Verify email configuration (non-blocking)
     const { verifyEmailConfig } = require('./services/emailService');

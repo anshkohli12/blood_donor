@@ -4,7 +4,7 @@ const UserModel = require('./models/User');
 
 async function initAdmin() {
   try {
-    await dbConnection.connect();
+    await dbConnection.connect(process.env.MONGODB_URI);
     console.log('Creating admin user...');
     
     const admin = await UserModel.createAdminUser();
