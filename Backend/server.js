@@ -156,7 +156,10 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-startServer();
+// Detect if we are in Vercel serverless environment
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
 
 // Export the Express API for Vercel
 module.exports = app;
