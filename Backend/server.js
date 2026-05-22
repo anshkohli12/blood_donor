@@ -15,6 +15,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Vercel Serverless: Ensure database is connected before handling requests
+app.use(async (req, res, next) => {
+  try {
+    await dbConnection.connect(process.env.MONGODB_URI);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Serve static files for uploaded images
 app.use('/uploads', express.static('uploads'));
 
