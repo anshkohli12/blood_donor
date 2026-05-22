@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   MapPin,
   Phone,
@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Info,
+  X,
 } from "lucide-react"
 import CustomButton from "./CustomButton"
 
@@ -88,10 +89,10 @@ const BloodBankCard = ({ bloodBank }) => {
   return (
     <motion.div
       whileHover={{ y: -5 }}
-      className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
+      className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden h-full flex flex-col relative"
     >
       {/* Header with Profile Image */}
-      <div className="p-6 pb-4">
+      <div className="p-6 pb-4 flex-1 flex flex-col pt-10">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-start space-x-4 flex-1">
             {/* Profile Image */}
@@ -99,7 +100,7 @@ const BloodBankCard = ({ bloodBank }) => {
               <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden">
                 {bloodBank.profileImage ? (
                   <img
-                    src={`http://localhost:5000${bloodBank.profileImage}`}
+                    src={bloodBank.profileImage.startsWith('http') ? bloodBank.profileImage : `http://localhost:5000${bloodBank.profileImage}`}
                     alt={`${bloodBank.name} profile`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -168,8 +169,8 @@ const BloodBankCard = ({ bloodBank }) => {
               <Droplets className="h-4 w-4 mr-2 text-blood-crimson" />
               Blood Stock Status
             </h4>
-            <CustomButton variant="ghost" size="xs" onClick={() => setShowStock(!showStock)}>
-              {showStock ? "Hide" : "View All"}
+            <CustomButton variant="ghost" size="xs" onClick={() => setShowStock(true)}>
+              View All
             </CustomButton>
           </div>
 
@@ -200,94 +201,8 @@ const BloodBankCard = ({ bloodBank }) => {
           </div>
         </div>
 
-        {/* Detailed Stock Information */}
-        {showStock && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="border-t pt-4 mt-4"
-          >
-            <div className="grid grid-cols-2 gap-3">
-              {Object.entries(bloodBank.bloodStock || {})
-                .filter(([bloodType]) => bloodType !== '_id' && bloodType !== '__v')
-                .map(([bloodType, units]) => {
-                const stockStatus = getStockStatus(units)
-                const StockIcon = stockStatus.icon
-
-                return (
-                  <div key={bloodType} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className={`w-8 h-8 ${getBloodTypeColor(bloodType)} rounded-lg flex items-center justify-center`}
-                      >
-                        <Droplets className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{bloodType}</p>
-                        <p className="text-xs text-gray-500">{units} units</p>
-                      </div>
-                    </div>
-                    <div
-                      className={`px-2 py-1 rounded text-xs font-semibold flex items-center space-x-1 ${stockStatus.bgColor} ${stockStatus.color}`}
-                    >
-                      <StockIcon className="h-3 w-3" />
-                      <span>{stockStatus.text}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Contact Information */}
-        {showContact && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="border-t pt-4 mt-4 space-y-3"
-          >
-            {bloodBank.phone && (
-              <div className="flex items-center space-x-3">
-                <Phone className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-700">{bloodBank.phone}</span>
-              </div>
-            )}
-
-            {bloodBank.email && (
-              <div className="flex items-center space-x-3">
-                <Mail className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-700">{bloodBank.email}</span>
-              </div>
-            )}
-
-            {bloodBank.website && (
-              <div className="flex items-center space-x-3">
-                <Info className="h-4 w-4 text-gray-500" />
-                <a
-                  href={bloodBank.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blood-crimson hover:text-blood-deep"
-                >
-                  Visit Website
-                </a>
-              </div>
-            )}
-
-            {bloodBank.specialServices && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">Special Services:</p>
-                <p className="text-sm text-gray-600">{bloodBank.specialServices}</p>
-              </div>
-            )}
-          </motion.div>
-        )}
-
         {/* Actions */}
-        <div className="flex space-x-3 mt-6">
+        <div className="flex space-x-3 mt-auto pt-4 relative z-10">
           <CustomButton
             variant="primary"
             size="sm"
@@ -305,17 +220,148 @@ const BloodBankCard = ({ bloodBank }) => {
           <CustomButton
             variant="outline"
             size="sm"
-            icon={showContact ? Info : Phone}
-            onClick={() => setShowContact(!showContact)}
+            icon={Phone}
+            onClick={() => setShowContact(true)}
           >
-            {showContact ? "Hide" : "Contact"}
+            Contact
           </CustomButton>
         </div>
       </div>
 
+      {/* Overlays */}
+      <AnimatePresence>
+        {showStock && (
+          <motion.div
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-6 pt-12 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-4 border-b pb-3 border-gray-200">
+              <h4 className="text-lg font-bold text-gray-900 flex items-center">
+                <Droplets className="h-5 w-5 mr-2 text-blood-crimson" />
+                Detailed Stock
+              </h4>
+              <button 
+                onClick={() => setShowStock(false)} 
+                className="p-1.5 hover:bg-gray-200 rounded-full transition-colors bg-white shadow-sm border border-gray-200 text-gray-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 overflow-y-auto pr-1 pb-4 custom-scrollbar">
+              {Object.entries(bloodBank.bloodStock || {})
+                .filter(([bloodType]) => bloodType !== '_id' && bloodType !== '__v')
+                .map(([bloodType, units]) => {
+                const stockStatus = getStockStatus(units)
+                const StockIcon = stockStatus.icon
+
+                return (
+                  <div key={bloodType} className="flex items-center justify-between p-3 bg-white border border-gray-100 shadow-sm rounded-lg hover:shadow-md transition-all">
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 ${getBloodTypeColor(bloodType)} rounded-lg flex items-center justify-center shadow-inner`}
+                      >
+                        <Droplets className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900">{bloodType}</p>
+                        <p className="text-xs font-medium text-gray-500">{units} units</p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showContact && (
+          <motion.div
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm p-6 pt-12 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-6 border-b pb-3 border-gray-200">
+              <h4 className="text-lg font-bold text-gray-900 flex items-center">
+                <Phone className="h-5 w-5 mr-2 text-blue-600" />
+                Contact Info
+              </h4>
+              <button 
+                onClick={() => setShowContact(false)} 
+                className="p-1.5 hover:bg-gray-200 rounded-full transition-colors bg-white shadow-sm border border-gray-200 text-gray-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="space-y-4 overflow-y-auto pb-4 custom-scrollbar">
+              {bloodBank.phone && (
+                <div className="flex items-start space-x-3 p-3 bg-white border border-gray-100 rounded-lg shadow-sm">
+                  <div className="mt-0.5 p-2 bg-blue-50 rounded-full">
+                    <Phone className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Phone</p>
+                    <span className="text-sm font-semibold text-gray-800">{bloodBank.phone}</span>
+                  </div>
+                </div>
+              )}
+
+              {bloodBank.email && (
+                <div className="flex items-start space-x-3 p-3 bg-white border border-gray-100 rounded-lg shadow-sm">
+                  <div className="mt-0.5 p-2 bg-red-50 rounded-full">
+                    <Mail className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Email</p>
+                    <span className="text-sm font-semibold text-gray-800 break-all">{bloodBank.email}</span>
+                  </div>
+                </div>
+              )}
+
+              {bloodBank.website && (
+                <div className="flex items-start space-x-3 p-3 bg-white border border-gray-100 rounded-lg shadow-sm">
+                  <div className="mt-0.5 p-2 bg-green-50 rounded-full">
+                    <Info className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Website</p>
+                    <a
+                      href={bloodBank.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-semibold text-blood-crimson hover:text-blood-deep break-all"
+                    >
+                      Visit Website
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {bloodBank.specialServices && (
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs font-semibold text-gray-700 mb-1 flex items-center">
+                    <Star className="h-3 w-3 mr-1 text-yellow-500" />
+                    Special Services
+                  </p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{bloodBank.specialServices}</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Verification Badge */}
-      <div className="absolute top-4 left-4">
-        <div className="flex items-center space-x-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
+      <div className="absolute top-4 left-4 z-10">
+        <div className="flex items-center space-x-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold shadow-sm">
           <Shield className="h-3 w-3" />
           <span>Certified</span>
         </div>

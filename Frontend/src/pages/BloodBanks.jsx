@@ -188,30 +188,49 @@ const BloodBanks = () => {
   useEffect(() => {
     let filtered = bloodBanks
 
+    // Helper to safely get address fields regardless of data shape
+    const getCity = (bank) => {
+      if (typeof bank.address === 'object' && bank.address?.city) return bank.address.city
+      return bank.city || ''
+    }
+    const getState = (bank) => {
+      if (typeof bank.address === 'object' && bank.address?.state) return bank.address.state
+      return bank.state || ''
+    }
+    const getAddressStr = (bank) => {
+      if (typeof bank.address === 'string') return bank.address
+      if (typeof bank.address === 'object') {
+        return [bank.address?.street, bank.address?.city, bank.address?.state].filter(Boolean).join(', ')
+      }
+      return ''
+    }
+
     // Filter by search term
     if (searchTerm) {
+      const term = searchTerm.toLowerCase()
       filtered = filtered.filter(
         (bank) =>
-          bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          bank.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          bank.city.toLowerCase().includes(searchTerm.toLowerCase()),
+          (bank.name || '').toLowerCase().includes(term) ||
+          getAddressStr(bank).toLowerCase().includes(term) ||
+          getCity(bank).toLowerCase().includes(term),
       )
     }
 
     // Filter by blood type availability
     if (selectedBloodType) {
       filtered = filtered.filter((bank) => {
-        const stock = bank.bloodStock[selectedBloodType]
+        const stock = bank.bloodStock?.[selectedBloodType]
         return stock && stock > 0
       })
     }
 
     // Filter by location
     if (selectedLocation) {
+      const loc = selectedLocation.toLowerCase()
       filtered = filtered.filter(
         (bank) =>
-          bank.city.toLowerCase().includes(selectedLocation.toLowerCase()) ||
-          bank.state.toLowerCase().includes(selectedLocation.toLowerCase()),
+          getCity(bank).toLowerCase().includes(loc) ||
+          getState(bank).toLowerCase().includes(loc),
       )
     }
 
@@ -339,7 +358,8 @@ const BloodBanks = () => {
                   key={bloodBank._id || bloodBank.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: Math.min(index * 0.05, 0.5) }}
+                  className="h-full"
                 >
                   <BloodBankCard bloodBank={bloodBank} />
                 </motion.div>

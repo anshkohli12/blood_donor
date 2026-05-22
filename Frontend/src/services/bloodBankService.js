@@ -3,7 +3,9 @@ import api from "./api"
 export const bloodBankService = {
   // Public methods - for users to find blood banks
   async getAllBloodBanks(filters = {}) {
-    const params = new URLSearchParams(filters)
+    // Set a high default limit to fetch all blood banks
+    const defaultFilters = { limit: 100, ...filters }
+    const params = new URLSearchParams(defaultFilters)
     const response = await api.get(`/blood-banks?${params}`)
     return response.data
   },

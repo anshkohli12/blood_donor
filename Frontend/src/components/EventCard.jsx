@@ -125,7 +125,13 @@ const EventCard = ({ event }) => {
       {/* Event Image */}
       <div className="relative h-48 bg-gradient-to-r from-blood-deep to-blood-crimson">
         <img
-          src={event.image ? `http://localhost:5000${event.image}` : "/placeholder.svg?height=200&width=400&query=blood donation event"}
+          src={
+            event.image
+              ? event.image.startsWith("http")
+                ? event.image
+                : `http://localhost:5000${event.image}`
+              : "/placeholder.svg?height=200&width=400&query=blood donation event"
+          }
           alt={event.title}
           className="w-full h-full object-cover"
         />

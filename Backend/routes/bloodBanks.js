@@ -81,7 +81,7 @@ router.get('/', async (req, res) => {
 
     const bloodBanks = await BloodBank.find(query)
       .select('-password') // Don't send password
-      .populate('createdBy', 'firstName lastName')
+      
       .sort({ rating: -1, reviewCount: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -139,7 +139,7 @@ router.get('/nearby', async (req, res) => {
 
     const bloodBanks = await BloodBank.find(query)
       .select('-password')
-      .populate('createdBy', 'firstName lastName')
+      
       .sort({ rating: -1 })
 
     res.json({
@@ -161,7 +161,7 @@ router.get('/:id', async (req, res) => {
   try {
     const bloodBank = await BloodBank.findById(req.params.id)
       .select('-password')
-      .populate('createdBy', 'firstName lastName')
+      
 
     if (!bloodBank) {
       return res.status(404).json({
@@ -234,7 +234,7 @@ router.get('/search', async (req, res) => {
       $text: { $search: q }
     })
     .select('-password')
-    .populate('createdBy', 'firstName lastName')
+    
 
     res.json({
       success: true,
@@ -339,7 +339,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     // Return blood bank without password
     const bloodBankResponse = await BloodBank.findById(bloodBank._id)
       .select('-password')
-      .populate('createdBy', 'firstName lastName')
+      
 
     res.status(201).json({
       success: true,
@@ -393,7 +393,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     const updatedBloodBank = await BloodBank.findById(bloodBank._id)
       .select('-password')
-      .populate('createdBy', 'firstName lastName')
+      
 
     res.json({
       success: true,

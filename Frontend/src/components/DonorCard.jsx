@@ -67,7 +67,7 @@ const DonorCard = ({ donor }) => {
           <div className="flex items-center space-x-4">
             <div className="relative">
               <img
-                src={donor.avatar || "/placeholder.svg"}
+                src={donor.avatar ? (donor.avatar.startsWith('http') ? donor.avatar : `http://localhost:5000${donor.avatar}`) : "/placeholder.svg"}
                 alt={donor.name}
                 className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
               />
