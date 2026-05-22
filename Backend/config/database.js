@@ -32,6 +32,10 @@ class DatabaseConnection {
     try {
       const connectionUri = uri || process.env.MONGODB_URI;
       
+      if (!connectionUri) {
+        throw new Error("MONGODB_URI is missing or undefined. Please add it to Vercel Environment Variables.");
+      }
+
       // Use mongoose.connection.readyState to accurately check connection status
       // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
       if (mongoose.connection.readyState === 1) {
