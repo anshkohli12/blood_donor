@@ -32,20 +32,28 @@ class DatabaseConnection {
     try {
       const connectionUri = uri || process.env.MONGODB_URI;
       
-      if (this.isConnected) {
-        console.log('Already connected to MongoDB');
-        return;
+      // Use mongoose.connection.readyState to accurately check connection status
+      // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+      if (mongoose.connection.readyState === 1) {
+        console.log('Already connected to MongoDB (readyState: 1)');
+        this.isConnected = true;
+        return mongoose.connection;
+      }
+
+      if (mongoose.connection.readyState === 2) {
+        console.log('Currently connecting...');
+        return mongoose.connection;
       }
 
       console.log('Connecting to MongoDB...');
-      console.log('Database URL:', connectionUri);
+      console.log('Database URL:', connectionUri ? 'Set' : 'Undefined');
 
-      // Configure Mongoose options
+      // Configure Mongoose options for serverless
       const options = {
-        serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-        socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-        maxPoolSize: 10, // Maintain up to 10 socket connections
-        heartbeatFrequencyMS: 10000, // Send a ping every 10 seconds
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        maxPoolSize: 10,
+        bufferCommands: false, // Prevents Mongoose from indefinitely holding queries if DB connection drops
       };
 
       await mongoose.connect(connectionUri, options);
@@ -79,14 +87,14 @@ class DatabaseConnection {
   }
 
   getDatabase() {
-    if (!this.isConnected) {
+    if (mongoose.connection.readyState !== 1) {
       throw new Error('Database not connected');
     }
     return mongoose.connection.db;
   }
 
   isConnectionReady() {
-    return this.isConnected && mongoose.connection.readyState === 1;
+    return mongoose.connection.readyState === 1;
   }
 }
 
