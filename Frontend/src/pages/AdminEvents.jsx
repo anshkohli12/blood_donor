@@ -23,16 +23,16 @@ const AdminEvents = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       console.log('Fetching events with status:', statusFilter);
-      
-      const response = await eventService.getAllEventsAdmin({ 
+
+      const response = await eventService.getAllEventsAdmin({
         status: statusFilter,
-        limit: 50 
+        limit: 50
       });
-      
+
       console.log('API Response:', response);
-      
+
       if (response.success) {
         console.log('Events data:', response.data);
         console.log('Status counts:', response.statusCounts);
@@ -58,7 +58,7 @@ const AdminEvents = () => {
     try {
       setActionLoading(true);
       const response = await eventService.approveEvent(eventId);
-      
+
       if (response.success) {
         alert('Event approved successfully!');
         fetchEvents();
@@ -80,7 +80,7 @@ const AdminEvents = () => {
     try {
       setActionLoading(true);
       const response = await eventService.rejectEvent(selectedEvent._id, rejectionReason);
-      
+
       if (response.success) {
         alert('Event rejected successfully');
         setShowRejectModal(false);
@@ -144,11 +144,10 @@ const AdminEvents = () => {
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-6 py-3 font-medium transition-colors ${
-                  statusFilter === status
+                className={`px-6 py-3 font-medium transition-colors ${statusFilter === status
                     ? 'border-b-2 border-red-500 text-red-600'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
                 {statusCounts[status] && (
@@ -186,7 +185,7 @@ const AdminEvents = () => {
                 <div className="flex flex-col lg:flex-row gap-6">
                   {/* Event Image */}
                   {event.image && (
-                    <div 
+                    <div
                       className="lg:w-48 h-48 flex-shrink-0 cursor-pointer"
                       onClick={() => openDetailModal(event)}
                     >
@@ -202,7 +201,7 @@ const AdminEvents = () => {
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 
+                        <h3
                           className="text-xl font-bold text-gray-900 mb-2 cursor-pointer hover:text-red-600 transition-colors"
                           onClick={() => openDetailModal(event)}
                         >
@@ -221,8 +220,8 @@ const AdminEvents = () => {
                     </div>
 
                     <p className="text-gray-700 mb-4">
-                      {event.description?.length > 150 
-                        ? `${event.description.substring(0, 150)}...` 
+                      {event.description?.length > 150
+                        ? `${event.description.substring(0, 150)}...`
                         : event.description}
                     </p>
 
