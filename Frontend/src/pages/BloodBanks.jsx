@@ -24,7 +24,7 @@ const BloodBanks = () => {
       setLoading(true)
       const response = await bloodBankService.getAllBloodBanks()
       const bloodBanksData = response.data || []
-      
+
       // Calculate distance if user location is available
       let bloodBanksWithDistance = bloodBanksData
       const locationToUse = currentLocation || userLocation
@@ -42,7 +42,7 @@ const BloodBanks = () => {
           return bank
         })
       }
-      
+
       setBloodBanks(bloodBanksWithDistance)
       setFilteredBloodBanks(bloodBanksWithDistance)
     } catch (error) {
@@ -60,11 +60,11 @@ const BloodBanks = () => {
     const R = 3959 // Radius of the Earth in miles
     const dLat = (lat2 - lat1) * Math.PI / 180
     const dLon = (lon2 - lon1) * Math.PI / 180
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
   }
 

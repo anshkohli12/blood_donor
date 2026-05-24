@@ -29,6 +29,7 @@ import BloodBankRequests from "./pages/BloodBankRequests"
 import CreateEvent from "./pages/CreateEvent"
 import EventRegistrations from "./pages/EventRegistrations"
 import MyMessages from "./pages/MyMessages"
+import MyBloodRequests from "./pages/MyBloodRequests"
 
 function App() {
   return (
@@ -123,6 +124,14 @@ function App() {
             element={
               <MainLayout>
                 <MyMessages />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/my-blood-requests"
+            element={
+              <MainLayout>
+                <MyBloodRequests />
               </MainLayout>
             }
           />

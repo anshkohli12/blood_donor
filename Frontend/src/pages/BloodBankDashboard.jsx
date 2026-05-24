@@ -82,7 +82,7 @@ const BloodBankDashboard = () => {
       if (userData && userData.id) {
         const response = await bloodBankService.getBloodBankById(userData.id)
         setBloodBank(response.data)
-        
+
         // Calculate stats
         const bloodStock = response.data.bloodStock || {}
         console.log('Blood stock data:', bloodStock)
@@ -97,7 +97,7 @@ const BloodBankDashboard = () => {
           const units = bloodStock[bloodType] || 0
           return typeof units === 'number' && units < 10
         }).length
-        
+
         setStats({
           totalUnits,
           lowStockTypes,
@@ -137,7 +137,7 @@ const BloodBankDashboard = () => {
     try {
       setLoadingEvents(true)
       const response = await eventService.getMyEvents()
-      
+
       if (response.success) {
         // Get only the latest 3 events
         setMyEvents(response.data.slice(0, 3))
@@ -153,7 +153,7 @@ const BloodBankDashboard = () => {
     try {
       const userData = JSON.parse(localStorage.getItem('bloodbank'))
       await bloodBankService.updateBulkBloodStock(userData.id, stockUpdates)
-      
+
       setEditingStock(false)
       await loadBloodBankData()
       alert('Blood stock updated successfully!')
@@ -186,10 +186,10 @@ const BloodBankDashboard = () => {
   const getBloodTypeColor = (bloodType) => {
     const colors = {
       "O+": "bg-red-500",
-      "O-": "bg-red-600", 
+      "O-": "bg-red-600",
       "A+": "bg-blue-500",
       "A-": "bg-blue-600",
-      "B+": "bg-green-500", 
+      "B+": "bg-green-500",
       "B-": "bg-green-600",
       "AB+": "bg-purple-500",
       "AB-": "bg-purple-600"
@@ -216,7 +216,7 @@ const BloodBankDashboard = () => {
     const now = new Date()
     const startDate = new Date(event.startDate)
     const endDate = new Date(event.endDate)
-    
+
     if (now < startDate) return { text: 'Upcoming', color: 'bg-blue-100 text-blue-700' }
     if (now >= startDate && now <= endDate) return { text: 'Ongoing', color: 'bg-green-100 text-green-700' }
     return { text: 'Completed', color: 'bg-gray-100 text-gray-700' }
@@ -600,7 +600,7 @@ const BloodBankDashboard = () => {
                   const approvalStatus = getApprovalStatus(event)
                   const registeredCount = event.registrations?.length || 0
                   const capacityPercent = (registeredCount / event.maxCapacity) * 100
-                  
+
                   return (
                     <motion.div
                       key={event._id}
@@ -638,7 +638,7 @@ const BloodBankDashboard = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex-1 mr-4">
                           <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
@@ -649,11 +649,10 @@ const BloodBankDashboard = () => {
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className={`h-2 rounded-full transition-all ${
-                                capacityPercent >= 90 ? 'bg-red-500' :
-                                capacityPercent >= 70 ? 'bg-yellow-500' :
-                                'bg-green-500'
-                              }`}
+                              className={`h-2 rounded-full transition-all ${capacityPercent >= 90 ? 'bg-red-500' :
+                                  capacityPercent >= 70 ? 'bg-yellow-500' :
+                                    'bg-green-500'
+                                }`}
                               style={{ width: `${Math.min(capacityPercent, 100)}%` }}
                             />
                           </div>
@@ -702,14 +701,14 @@ const BloodBankDashboard = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-4">
                 <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-lg flex-shrink-0">
                   <Phone className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900 mb-1">Phone</p>
-                  <a 
+                  <a
                     href={`tel:${bloodBank.contact?.phone}`}
                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                   >
@@ -724,7 +723,7 @@ const BloodBankDashboard = () => {
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900 mb-1">Email</p>
-                  <a 
+                  <a
                     href={`mailto:${bloodBank.email}`}
                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline break-all"
                   >
@@ -740,7 +739,7 @@ const BloodBankDashboard = () => {
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 mb-1">Website</p>
-                    <a 
+                    <a
                       href={bloodBank.contact.website}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -881,25 +880,25 @@ const BloodBankDashboard = () => {
               <CustomButton
                 variant="outline"
                 className="flex items-center justify-center space-x-2 h-16"
-                onClick={() => {/* TODO: Download stock report */}}
+                onClick={() => {/* TODO: Download stock report */ }}
               >
                 <Download className="h-5 w-5" />
                 <span>Download Stock Report</span>
               </CustomButton>
-              
+
               <CustomButton
                 variant="outline"
                 className="flex items-center justify-center space-x-2 h-16"
-                onClick={() => {/* TODO: View requests */}}
+                onClick={() => {/* TODO: View requests */ }}
               >
                 <Users className="h-5 w-5" />
                 <span>View Blood Requests</span>
               </CustomButton>
-              
+
               <CustomButton
                 variant="outline"
                 className="flex items-center justify-center space-x-2 h-16"
-                onClick={() => {/* TODO: Contact admin */}}
+                onClick={() => {/* TODO: Contact admin */ }}
               >
                 <Mail className="h-5 w-5" />
                 <span>Contact Administrator</span>

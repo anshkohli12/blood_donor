@@ -30,7 +30,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Basic route
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Blood Donor Backend API is running!',
     status: 'success'
   });
@@ -41,13 +41,13 @@ app.get('/health', async (req, res) => {
   try {
     const db = dbConnection.getDatabase();
     await db.admin().ping();
-    res.json({ 
+    res.json({
       status: 'healthy',
       database: 'connected',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       status: 'unhealthy',
       database: 'disconnected',
       error: error.message,
@@ -63,6 +63,7 @@ const contactRoutes = require('./routes/contact');
 const bloodBankRoutes = require('./routes/bloodBanks');
 const eventRoutes = require('./routes/events');
 const requestRoutes = require('./routes/requests');
+const notificationRoutes = require('./routes/notifications');
 
 console.log('=== MOUNTING ROUTES ===');
 console.log('Auth routes type:', typeof authRoutes);
@@ -98,6 +99,9 @@ console.log('✅ Event routes mounted at /api/events');
 app.use('/api/requests', requestRoutes);
 console.log('✅ Request routes mounted at /api/requests');
 
+app.use('/api/notifications', notificationRoutes);
+console.log('✅ Notification routes mounted at /api/notifications');
+
 // Debug middleware to log all requests - moved after routes
 
 // Example: app.use('/api/requests', requestRoutes);
@@ -125,14 +129,14 @@ async function startServer() {
   try {
     // Connect to MongoDB first
     await dbConnection.connect(process.env.MONGODB_URI);
-    
+
     // Verify email configuration (non-blocking)
     const { verifyEmailConfig } = require('./services/emailService');
     verifyEmailConfig().catch(err => {
       console.warn('⚠️ Email service not configured properly. Email notifications will be disabled.');
       console.warn('   To enable emails, add EMAIL_USER and EMAIL_PASSWORD to .env file');
     });
-    
+
     // Start the server
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

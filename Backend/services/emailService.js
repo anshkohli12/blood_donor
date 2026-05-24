@@ -286,7 +286,208 @@ const emailTemplates = {
     `
   }),
 
-  // Blood request status update
+  // Blood request pending notification
+  bloodRequestPending: (data) => ({
+    to: data.requesterEmail,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    subject: `🩸 Blood Request ${data.requestId} — Received & Under Review`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px 20px; border-radius: 10px 10px 0 0; text-align: center; }
+          .content { background: #f9fafb; padding: 30px 20px; border-left: 4px solid #dc2626; border-right: 4px solid #dc2626; }
+          .info-box { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .footer { background: #1f2937; color: #9ca3af; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 14px; }
+          .status-badge { display: inline-block; padding: 10px 25px; border-radius: 25px; font-weight: bold; background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>🩸 Blood Request Received</h1>
+          <div class="status-badge">⏳ UNDER REVIEW</div>
+        </div>
+        <div class="content">
+          <div class="info-box">
+            <p><strong>Dear ${data.requesterName},</strong></p>
+            <p>Your blood request has been received and is currently under review by the blood bank.</p>
+          </div>
+          <div class="info-box">
+            <strong>📋 Request ID:</strong> ${data.requestId}<br>
+            <strong>🩸 Blood Type:</strong> ${data.bloodType}<br>
+            <strong>👤 Patient:</strong> ${data.patientName}<br>
+            <strong>💉 Units Needed:</strong> ${data.unitsNeeded}
+          </div>
+          <div class="info-box" style="text-align: center;">
+            <p>We will notify you once the blood bank reviews your request.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <p><strong>Blood Donor Platform</strong></p>
+          <p>Your request is being processed</p>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // Blood request approved
+  bloodRequestApproved: (data) => ({
+    to: data.requesterEmail,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    subject: `✅ Blood Request ${data.requestId} — APPROVED`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 30px 20px; border-radius: 10px 10px 0 0; text-align: center; }
+          .content { background: #f9fafb; padding: 30px 20px; border-left: 4px solid #16a34a; border-right: 4px solid #16a34a; }
+          .info-box { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .appointment-box { background: #f0fdf4; border: 2px solid #22c55e; padding: 20px; border-radius: 8px; margin: 15px 0; }
+          .footer { background: #1f2937; color: #9ca3af; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 14px; }
+          .status-badge { display: inline-block; padding: 10px 25px; border-radius: 25px; font-weight: bold; background: #dcfce7; color: #166534; border: 2px solid #22c55e; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>✅ Request Approved!</h1>
+          <div class="status-badge">APPROVED</div>
+        </div>
+        <div class="content">
+          <div class="info-box">
+            <p><strong>Dear ${data.requesterName},</strong></p>
+            <p>Great news! Your blood request has been approved by <strong>${data.bloodBankName}</strong>.</p>
+          </div>
+          <div class="info-box">
+            <strong>📋 Request ID:</strong> ${data.requestId}<br>
+            <strong>🩸 Blood Type:</strong> ${data.bloodType}<br>
+            <strong>👤 Patient:</strong> ${data.patientName}<br>
+            <strong>💉 Units:</strong> ${data.unitsNeeded}
+          </div>
+          ${data.appointmentDate ? `
+          <div class="appointment-box">
+            <h3 style="margin-top:0; color: #166534;">📅 Appointment Details</h3>
+            <strong>🏥 Blood Bank:</strong> ${data.bloodBankName}<br>
+            ${data.bloodBankLocation ? `<strong>📍 Location:</strong> ${data.bloodBankLocation}<br>` : ''}
+            <strong>📅 Date:</strong> ${data.appointmentDate}<br>
+            <strong>⏰ Time:</strong> ${data.appointmentTime}<br>
+            ${data.appointmentRoom ? `<strong>🚪 Room/Counter:</strong> ${data.appointmentRoom}<br>` : ''}
+            ${data.instructions ? `<strong>📝 Instructions:</strong> ${data.instructions}` : ''}
+          </div>
+          ` : ''}
+        </div>
+        <div class="footer">
+          <p><strong>Blood Donor Platform</strong></p>
+          <p>Thank you for using our platform to save lives</p>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // Blood request rejected
+  bloodRequestRejected: (data) => ({
+    to: data.requesterEmail,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    subject: `❌ Blood Request ${data.requestId} — Rejected`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px 20px; border-radius: 10px 10px 0 0; text-align: center; }
+          .content { background: #f9fafb; padding: 30px 20px; border-left: 4px solid #dc2626; border-right: 4px solid #dc2626; }
+          .info-box { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .reason-box { background: #fef2f2; border: 2px solid #ef4444; padding: 20px; border-radius: 8px; margin: 15px 0; }
+          .footer { background: #1f2937; color: #9ca3af; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 14px; }
+          .status-badge { display: inline-block; padding: 10px 25px; border-radius: 25px; font-weight: bold; background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Blood Request Update</h1>
+          <div class="status-badge">❌ REJECTED</div>
+        </div>
+        <div class="content">
+          <div class="info-box">
+            <p><strong>Dear ${data.requesterName},</strong></p>
+            <p>We regret to inform you that your blood request has been rejected by <strong>${data.bloodBankName}</strong>.</p>
+          </div>
+          <div class="reason-box">
+            <h3 style="margin-top:0; color: #991b1b;">📝 Reason for Rejection</h3>
+            <p>${data.rejectionReason}</p>
+          </div>
+          <div class="info-box">
+            <strong>📋 Request ID:</strong> ${data.requestId}<br>
+            <strong>🩸 Blood Type:</strong> ${data.bloodType}<br>
+            <strong>👤 Patient:</strong> ${data.patientName}
+          </div>
+          <div class="info-box" style="text-align: center;">
+            <p>You may try submitting a new request to a different blood bank.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <p><strong>Blood Donor Platform</strong></p>
+          <p>We're here to help connect you with the right resources</p>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // Blood request completed
+  bloodRequestCompleted: (data) => ({
+    to: data.requesterEmail,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    subject: `✔️ Blood Request ${data.requestId} — Completed`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px 20px; border-radius: 10px 10px 0 0; text-align: center; }
+          .content { background: #f9fafb; padding: 30px 20px; border-left: 4px solid #2563eb; border-right: 4px solid #2563eb; }
+          .info-box { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .footer { background: #1f2937; color: #9ca3af; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; font-size: 14px; }
+          .status-badge { display: inline-block; padding: 10px 25px; border-radius: 25px; font-weight: bold; background: #dbeafe; color: #1e40af; border: 2px solid #3b82f6; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Request Completed!</h1>
+          <div class="status-badge">✔️ COMPLETED</div>
+        </div>
+        <div class="content">
+          <div class="info-box">
+            <p><strong>Dear ${data.requesterName},</strong></p>
+            <p>Your blood request has been successfully fulfilled. We hope the patient is doing well.</p>
+          </div>
+          <div class="info-box">
+            <strong>📋 Request ID:</strong> ${data.requestId}<br>
+            <strong>🩸 Blood Type:</strong> ${data.bloodType}<br>
+            <strong>👤 Patient:</strong> ${data.patientName}<br>
+            <strong>🏥 Blood Bank:</strong> ${data.bloodBankName}
+          </div>
+          <div class="info-box" style="text-align: center;">
+            <p>Thank you for trusting Blood Donor Platform. Together, we save lives! ❤️</p>
+          </div>
+        </div>
+        <div class="footer">
+          <p><strong>Blood Donor Platform</strong></p>
+          <p>Every drop counts — Thank you for being part of our community</p>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // Blood request status update (legacy template — kept for backward compatibility)
   bloodRequestStatusUpdate: (data) => ({
     to: data.requesterEmail,
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
@@ -360,9 +561,9 @@ const emailTemplates = {
         <div class="header">
           <h1>🩸 Blood Request Update</h1>
           <div class="status-badge status-${data.status}">
-            ${data.status === 'approved' ? '✅ APPROVED' : 
-              data.status === 'rejected' ? '❌ REJECTED' : 
-              data.status === 'fulfilled' ? '✔️ FULFILLED' : data.status.toUpperCase()}
+            ${data.status === 'approved' ? '✅ APPROVED' :
+        data.status === 'rejected' ? '❌ REJECTED' :
+          data.status === 'fulfilled' ? '✔️ FULFILLED' : data.status.toUpperCase()}
           </div>
         </div>
         
@@ -407,13 +608,13 @@ const sendEmail = async (type, data) => {
     }
 
     const emailConfig = emailTemplates[type](data);
-    
+
     console.log(`Sending ${type} email to:`, emailConfig.to);
-    
+
     const result = await transporter.sendMail(emailConfig);
-    
+
     console.log('Email sent successfully:', result.messageId);
-    
+
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending email:', error);

@@ -6,6 +6,14 @@ export const requestService = {
     return response.data
   },
 
+  // Create request with prescription file upload (multipart/form-data)
+  async createRequestWithPrescription(formData) {
+    const response = await api.post("/requests", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    })
+    return response.data
+  },
+
   async getAllRequests(filters = {}) {
     const params = new URLSearchParams(filters)
     const response = await api.get(`/requests?${params}`)
@@ -49,8 +57,14 @@ export const requestService = {
     return response.data
   },
 
-  async updateRequestStatus(id, status, note = '') {
-    const response = await api.put(`/requests/${id}/status`, { status, note })
+  async updateRequestStatus(id, statusData) {
+    const response = await api.put(`/requests/${id}/status`, statusData)
+    return response.data
+  },
+
+  // Schedule a visit (blood bank)
+  async scheduleVisit(id, scheduleData) {
+    const response = await api.put(`/requests/${id}/schedule`, scheduleData)
     return response.data
   },
 }

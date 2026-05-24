@@ -5,6 +5,7 @@ import { Link, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Heart, Menu, X, User, LogOut, Shield } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
+import NotificationBell from "./NotificationBell"
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -13,7 +14,7 @@ const Navbar = () => {
   const location = useLocation()
   const [bloodBank, setBloodBank] = useState(null)
   const [isBloodBankAuth, setIsBloodBankAuth] = useState(false)
-  
+
   // Check if we're on homepage for special styling
   const isHomePage = location.pathname === "/"
 
@@ -22,7 +23,7 @@ const Navbar = () => {
     const checkBloodBankAuth = () => {
       const bloodbankToken = localStorage.getItem('bloodbankToken')
       const bloodbankData = localStorage.getItem('bloodbank')
-      
+
       if (bloodbankToken && bloodbankData) {
         try {
           const parsedData = JSON.parse(bloodbankData)
@@ -40,7 +41,7 @@ const Navbar = () => {
         setIsBloodBankAuth(false)
       }
     }
-    
+
     // Check immediately
     checkBloodBankAuth()
   }, [location]) // Re-check whenever location changes
@@ -64,7 +65,7 @@ const Navbar = () => {
         { name: "Analytics", path: "/admin/analytics" },
       ]
     }
-    
+
     if (isBloodBankAuth) {
       return [
         { name: "Dashboard", path: "/blood-bank-dashboard" },
@@ -74,7 +75,7 @@ const Navbar = () => {
         { name: "Contact", path: "/contact" },
       ]
     }
-    
+
     return [
       { name: "Home", path: "/" },
       { name: "About", path: "/about" },
@@ -104,25 +105,22 @@ const Navbar = () => {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className={`fixed w-full z-50 transition-all duration-500 ${
-        isScrolled || !isHomePage
-          ? "bg-white/95 backdrop-blur-lg shadow-lg border-b border-gray-200/50" 
+      className={`fixed w-full z-50 transition-all duration-500 ${isScrolled || !isHomePage
+          ? "bg-white/95 backdrop-blur-lg shadow-lg border-b border-gray-200/50"
           : "bg-black/30 backdrop-blur-md"
-      }`}
+        }`}
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group transition-all duration-300 hover:scale-105">
             <Heart
-              className={`h-8 w-8 transition-all duration-300 ${
-                isScrolled || !isHomePage ? "text-blood-deep" : "text-white"
-              } group-hover:text-blood-crimson fill-current drop-shadow-lg`}
+              className={`h-8 w-8 transition-all duration-300 ${isScrolled || !isHomePage ? "text-blood-deep" : "text-white"
+                } group-hover:text-blood-crimson fill-current drop-shadow-lg`}
             />
             <span
-              className={`text-xl font-bold font-montserrat transition-all duration-300 ${
-                isScrolled || !isHomePage ? "text-gray-900" : "text-white"
-              } group-hover:text-blood-crimson drop-shadow-sm`}
+              className={`text-xl font-bold font-montserrat transition-all duration-300 ${isScrolled || !isHomePage ? "text-gray-900" : "text-white"
+                } group-hover:text-blood-crimson drop-shadow-sm`}
             >
               Blood Donor Network
             </span>
@@ -137,25 +135,23 @@ const Navbar = () => {
                 <span className="text-sm font-medium text-purple-600">Admin Mode</span>
               </div>
             )}
-            
+
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
-                className={`relative font-medium transition-all duration-300 hover:scale-105 group ${
-                  location.pathname === link.path 
-                    ? "text-blood-crimson" 
+                className={`relative font-medium transition-all duration-300 hover:scale-105 group ${location.pathname === link.path
+                    ? "text-blood-crimson"
                     : isScrolled || !isHomePage
-                      ? "text-gray-800 hover:text-blood-crimson" 
+                      ? "text-gray-800 hover:text-blood-crimson"
                       : "text-white hover:text-pink-200"
-                }`}
+                  }`}
               >
                 {link.name}
                 {/* Active indicator */}
-                <span 
-                  className={`absolute -bottom-1 left-0 w-full h-0.5 bg-blood-crimson transition-transform duration-300 ${
-                    location.pathname === link.path ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  }`}
+                <span
+                  className={`absolute -bottom-1 left-0 w-full h-0.5 bg-blood-crimson transition-transform duration-300 ${location.pathname === link.path ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                    }`}
                 />
               </Link>
             ))}
@@ -167,22 +163,20 @@ const Navbar = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/blood-bank-dashboard"
-                  className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
-                    isScrolled || !isHomePage
-                      ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100" 
+                  className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${isScrolled || !isHomePage
+                      ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100"
                       : "text-white hover:text-pink-200 hover:bg-white/10"
-                  }`}
+                    }`}
                 >
                   <User className="h-4 w-4" />
                   <span>{bloodBank?.name || "Blood Bank"}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
-                    isScrolled || !isHomePage
-                      ? "text-gray-800 hover:text-red-600 hover:bg-red-50" 
+                  className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${isScrolled || !isHomePage
+                      ? "text-gray-800 hover:text-red-600 hover:bg-red-50"
                       : "text-white hover:text-pink-200 hover:bg-white/10"
-                  }`}
+                    }`}
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
@@ -190,26 +184,25 @@ const Navbar = () => {
               </div>
             ) : isAuthenticated ? (
               <div className="flex items-center space-x-4">
+                <NotificationBell isScrolled={isScrolled} isHomePage={isHomePage} />
                 {user?.role === 'admin' ? (
                   <>
                     <Link
                       to="/admin/profile"
-                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
-                        isScrolled || !isHomePage
-                          ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100" 
+                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${isScrolled || !isHomePage
+                          ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100"
                           : "text-white hover:text-pink-200 hover:bg-white/10"
-                      }`}
+                        }`}
                     >
                       <User className="h-4 w-4" />
                       <span>{user?.firstName || "Profile"}</span>
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
-                        isScrolled || !isHomePage
-                          ? "text-gray-800 hover:text-red-600 hover:bg-red-50" 
+                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${isScrolled || !isHomePage
+                          ? "text-gray-800 hover:text-red-600 hover:bg-red-50"
                           : "text-white hover:text-pink-200 hover:bg-white/10"
-                      }`}
+                        }`}
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Logout</span>
@@ -219,22 +212,20 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/dashboard"
-                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
-                        isScrolled || !isHomePage
-                          ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100" 
+                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${isScrolled || !isHomePage
+                          ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100"
                           : "text-white hover:text-pink-200 hover:bg-white/10"
-                      }`}
+                        }`}
                     >
                       <User className="h-4 w-4" />
                       <span>{user?.firstName || "Dashboard"}</span>
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${
-                        isScrolled || !isHomePage
-                          ? "text-gray-800 hover:text-red-600 hover:bg-red-50" 
+                      className={`flex items-center space-x-2 font-medium transition-all duration-300 hover:scale-105 px-3 py-2 rounded-lg ${isScrolled || !isHomePage
+                          ? "text-gray-800 hover:text-red-600 hover:bg-red-50"
                           : "text-white hover:text-pink-200 hover:bg-white/10"
-                      }`}
+                        }`}
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Logout</span>
@@ -246,29 +237,26 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className={`font-medium transition-all duration-300 hover:scale-105 px-4 py-2 rounded-lg ${
-                    isScrolled || !isHomePage
-                      ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100" 
+                  className={`font-medium transition-all duration-300 hover:scale-105 px-4 py-2 rounded-lg ${isScrolled || !isHomePage
+                      ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100"
                       : "text-white hover:text-pink-200 hover:bg-white/10"
-                  }`}
+                    }`}
                 >
                   Login
                 </Link>
                 <Link
                   to="/blood-bank-login"
-                  className={`font-medium transition-all duration-300 hover:scale-105 px-4 py-2 rounded-lg border ${
-                    isScrolled || !isHomePage
-                      ? "text-gray-800 hover:text-blood-crimson border-gray-300 hover:border-blood-crimson hover:bg-gray-100" 
+                  className={`font-medium transition-all duration-300 hover:scale-105 px-4 py-2 rounded-lg border ${isScrolled || !isHomePage
+                      ? "text-gray-800 hover:text-blood-crimson border-gray-300 hover:border-blood-crimson hover:bg-gray-100"
                       : "text-white hover:text-pink-200 border-white/30 hover:border-pink-200 hover:bg-white/10"
-                  }`}
+                    }`}
                 >
                   Blood Bank Login
                 </Link>
-                <Link 
-                  to="/become-donor" 
-                  className={`btn-primary transition-all duration-300 hover:scale-105 shadow-lg ${
-                    isScrolled || !isHomePage ? "hover:shadow-xl" : "hover:shadow-2xl"
-                  }`}
+                <Link
+                  to="/become-donor"
+                  className={`btn-primary transition-all duration-300 hover:scale-105 shadow-lg ${isScrolled || !isHomePage ? "hover:shadow-xl" : "hover:shadow-2xl"
+                    }`}
                 >
                   Become Donor
                 </Link>
@@ -279,11 +267,10 @@ const Navbar = () => {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className={`lg:hidden p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-              isScrolled || !isHomePage
-                ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100" 
+            className={`lg:hidden p-2 rounded-lg transition-all duration-300 hover:scale-110 ${isScrolled || !isHomePage
+                ? "text-gray-800 hover:text-blood-crimson hover:bg-gray-100"
                 : "text-white hover:text-pink-200 hover:bg-white/10"
-            }`}
+              }`}
           >
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -305,15 +292,14 @@ const Navbar = () => {
                   <span className="text-sm font-medium text-purple-600">Admin Mode Active</span>
                 </div>
               )}
-              
+
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-                  className={`block font-medium transition-colors hover:text-blood-crimson ${
-                    location.pathname === link.path ? "text-blood-crimson" : "text-gray-700"
-                  }`}
+                  className={`block font-medium transition-colors hover:text-blood-crimson ${location.pathname === link.path ? "text-blood-crimson" : "text-gray-700"
+                    }`}
                 >
                   {link.name}
                 </Link>

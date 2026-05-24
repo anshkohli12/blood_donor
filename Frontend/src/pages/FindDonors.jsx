@@ -34,7 +34,7 @@ const FindDonors = () => {
       setLoading(true)
       setSearchError("")
       const response = await donorService.getAllDonors({ limit: 100 })
-      
+
       if (response.success) {
         // Map API data to match the expected format
         const mappedDonors = response.data.map(donor => ({
@@ -74,7 +74,7 @@ const FindDonors = () => {
       }
 
       const response = await donorService.getAllDonors({ ...apiFilters, limit: 100 })
-      
+
       if (response.success) {
         let filteredDonors = response.data.map(donor => ({
           id: donor._id,
@@ -93,7 +93,7 @@ const FindDonors = () => {
 
         // Apply client-side filters
         if (filters.city) {
-          filteredDonors = filteredDonors.filter((donor) => 
+          filteredDonors = filteredDonors.filter((donor) =>
             donor.city.toLowerCase().includes(filters.city.toLowerCase())
           )
         }

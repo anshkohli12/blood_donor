@@ -51,28 +51,28 @@ const BloodBankCard = ({ bloodBank }) => {
 
   const formatHours = (hours) => {
     if (!hours) return "Hours not available"
-    
+
     // If it's already a string (like operatingHoursDisplay), return it
     if (typeof hours === 'string') {
       return hours
     }
-    
+
     // If it's an object with day schedules, format it
     if (typeof hours === 'object' && hours.monday) {
       const openDays = []
       const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
       const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-      
+
       for (let i = 0; i < days.length; i++) {
         const day = hours[days[i]]
         if (day && day.isOpen) {
           openDays.push(`${dayNames[i]}: ${day.openTime} - ${day.closeTime}`)
         }
       }
-      
+
       return openDays.length > 0 ? openDays.join(', ') : 'Hours not available'
     }
-    
+
     return "Hours not available"
   }
 
@@ -114,21 +114,21 @@ const BloodBankCard = ({ bloodBank }) => {
                 )}
               </div>
             </div>
-            
+
             {/* Blood Bank Info */}
             <div className="flex-1">
               <h3 className="text-xl font-bold font-montserrat text-gray-900 mb-2">{bloodBank.name}</h3>
               <div className="flex items-center space-x-2 text-gray-600 mb-2">
                 <MapPin className="h-4 w-4" />
                 <span className="text-sm">
-                  {typeof bloodBank.address === 'string' 
-                    ? bloodBank.address 
+                  {typeof bloodBank.address === 'string'
+                    ? bloodBank.address
                     : bloodBank.address?.street || 'Address not available'}
                 </span>
               </div>
               <div className="flex items-center space-x-2 text-gray-600">
                 <span className="text-sm">
-                  {typeof bloodBank.address === 'object' 
+                  {typeof bloodBank.address === 'object'
                     ? `${bloodBank.address?.city || ''}, ${bloodBank.address?.state || ''} ${bloodBank.address?.zipCode || ''}`.trim()
                     : `${bloodBank.city || ''}, ${bloodBank.state || ''} ${bloodBank.zipCode || ''}`.trim()}
                 </span>
@@ -243,37 +243,37 @@ const BloodBankCard = ({ bloodBank }) => {
                 <Droplets className="h-5 w-5 mr-2 text-blood-crimson" />
                 Detailed Stock
               </h4>
-              <button 
-                onClick={() => setShowStock(false)} 
+              <button
+                onClick={() => setShowStock(false)}
                 className="p-1.5 hover:bg-gray-200 rounded-full transition-colors bg-white shadow-sm border border-gray-200 text-gray-700"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3 overflow-y-auto pr-1 pb-4 custom-scrollbar">
               {Object.entries(bloodBank.bloodStock || {})
                 .filter(([bloodType]) => bloodType !== '_id' && bloodType !== '__v')
                 .map(([bloodType, units]) => {
-                const stockStatus = getStockStatus(units)
-                const StockIcon = stockStatus.icon
+                  const stockStatus = getStockStatus(units)
+                  const StockIcon = stockStatus.icon
 
-                return (
-                  <div key={bloodType} className="flex items-center justify-between p-3 bg-white border border-gray-100 shadow-sm rounded-lg hover:shadow-md transition-all">
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className={`w-8 h-8 ${getBloodTypeColor(bloodType)} rounded-lg flex items-center justify-center shadow-inner`}
-                      >
-                        <Droplets className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900">{bloodType}</p>
-                        <p className="text-xs font-medium text-gray-500">{units} units</p>
+                  return (
+                    <div key={bloodType} className="flex items-center justify-between p-3 bg-white border border-gray-100 shadow-sm rounded-lg hover:shadow-md transition-all">
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-8 h-8 ${getBloodTypeColor(bloodType)} rounded-lg flex items-center justify-center shadow-inner`}
+                        >
+                          <Droplets className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">{bloodType}</p>
+                          <p className="text-xs font-medium text-gray-500">{units} units</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
             </div>
           </motion.div>
         )}
@@ -293,14 +293,14 @@ const BloodBankCard = ({ bloodBank }) => {
                 <Phone className="h-5 w-5 mr-2 text-blue-600" />
                 Contact Info
               </h4>
-              <button 
-                onClick={() => setShowContact(false)} 
+              <button
+                onClick={() => setShowContact(false)}
                 className="p-1.5 hover:bg-gray-200 rounded-full transition-colors bg-white shadow-sm border border-gray-200 text-gray-700"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            
+
             <div className="space-y-4 overflow-y-auto pb-4 custom-scrollbar">
               {bloodBank.phone && (
                 <div className="flex items-start space-x-3 p-3 bg-white border border-gray-100 rounded-lg shadow-sm">

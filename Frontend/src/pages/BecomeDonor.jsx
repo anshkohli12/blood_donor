@@ -545,13 +545,12 @@ const BecomeDonor = () => {
                       <div
                         className={`
                         flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300
-                        ${
-                          isActive
+                        ${isActive
                             ? "bg-blood-crimson border-blood-crimson text-white"
                             : isCompleted
                               ? "bg-green-500 border-green-500 text-white"
                               : "bg-white border-gray-300 text-gray-400"
-                        }
+                          }
                       `}
                       >
                         {isCompleted ? <CheckCircle className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
