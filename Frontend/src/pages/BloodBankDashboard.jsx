@@ -880,7 +880,33 @@ const BloodBankDashboard = () => {
               <CustomButton
                 variant="outline"
                 className="flex items-center justify-center space-x-2 h-16"
-                onClick={() => {/* TODO: Download stock report */ }}
+                onClick={() => {
+                  // Generate CSV stock report and download
+                  const bloodTypes = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']
+                  const rows = [
+                    ['Blood Type', 'Units Available', 'Status'],
+                    ...bloodTypes.map(bt => {
+                      const units = bloodBank.bloodStock?.[bt] || 0
+                      const status = units === 0 ? 'Out of Stock' : units < 10 ? 'Low Stock' : units < 50 ? 'Moderate' : 'Good Stock'
+                      return [bt, units, status]
+                    }),
+                    [],
+                    ['Total Units', stats.totalUnits, ''],
+                    ['Low Stock Types', stats.lowStockTypes, ''],
+                    ['Report Generated', new Date().toLocaleString(), ''],
+                    ['Blood Bank', bloodBank.name, '']
+                  ]
+                  const csv = rows.map(r => r.join(',')).join('\n')
+                  const blob = new Blob([csv], { type: 'text/csv' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `stock-report-${bloodBank.name?.replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.csv`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                }}
               >
                 <Download className="h-5 w-5" />
                 <span>Download Stock Report</span>
@@ -889,7 +915,7 @@ const BloodBankDashboard = () => {
               <CustomButton
                 variant="outline"
                 className="flex items-center justify-center space-x-2 h-16"
-                onClick={() => {/* TODO: View requests */ }}
+                onClick={() => navigate('/blood-bank-requests')}
               >
                 <Users className="h-5 w-5" />
                 <span>View Blood Requests</span>
@@ -898,7 +924,7 @@ const BloodBankDashboard = () => {
               <CustomButton
                 variant="outline"
                 className="flex items-center justify-center space-x-2 h-16"
-                onClick={() => {/* TODO: Contact admin */ }}
+                onClick={() => navigate('/contact')}
               >
                 <Mail className="h-5 w-5" />
                 <span>Contact Administrator</span>

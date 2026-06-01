@@ -5,24 +5,9 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const multer = require('multer')
-const path = require('path')
-const fs = require('fs')
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads/blood-banks')
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true })
-    }
-    cb(null, uploadDir)
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname))
-  }
-})
+// Configure multer with memory storage (works on Vercel's read-only filesystem)
+const storage = multer.memoryStorage()
 
 const fileFilter = (req, file, cb) => {
   // Allow only image files
@@ -40,6 +25,12 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 })
+
+// Helper: convert multer file buffer to Base64 data URI
+function fileToDataUri(file) {
+  const base64 = file.buffer.toString('base64')
+  return `data:${file.mimetype};base64,${base64}`
+}
 
 // Public routes - Get all blood banks (for users to find blood banks)
 router.get('/', async (req, res) => {
@@ -526,7 +517,7 @@ router.put('/:id/profile', authenticateToken, upload.single('profileImage'), asy
     }
 
     // Check if blood bank staff is updating their own profile
-    if (req.user.type === 'bloodbank' && req.user.bloodBankId !== req.params.id) {
+    if (req.user.type === 'bloodbank' && req.user.id !== req.params.id) {
       return res.status(403).json({
         success: false,
         message: 'You can only update your own profile'
@@ -544,42 +535,52 @@ router.put('/:id/profile', authenticateToken, upload.single('profileImage'), asy
     // Parse the form data
     const updateData = JSON.parse(req.body.data || '{}')
 
-    // Handle profile image upload
+    // Handle profile image upload — store as Base64 data URI
     if (req.file) {
-      // Delete old image if exists
-      if (bloodBank.profileImage) {
-        const oldImagePath = path.join(__dirname, '../uploads/blood-banks', path.basename(bloodBank.profileImage))
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath)
-        }
-      }
-      
-      // Set new image path
-      updateData.profileImage = `/uploads/blood-banks/${req.file.filename}`
+      updateData.profileImage = fileToDataUri(req.file)
     }
 
-    // Update the blood bank
-    const updatedBloodBank = await BloodBank.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password')
+    // Sanitize location — remove if coordinates are empty or invalid
+    if (updateData.location) {
+      if (!updateData.location.coordinates ||
+          !Array.isArray(updateData.location.coordinates) ||
+          updateData.location.coordinates.length !== 2 ||
+          updateData.location.coordinates.some(c => c === '' || c === null || c === undefined || isNaN(c))) {
+        delete updateData.location
+      } else {
+        updateData.location = {
+          type: 'Point',
+          coordinates: updateData.location.coordinates.map(Number)
+        }
+      }
+    }
+
+    // Apply updates directly to the document to trigger pre-save hooks correctly
+    const allowedFields = [
+      'name', 'licenseNumber', 'address', 'contact', 'contactPerson',
+      'specialServices', 'services', 'capacity', 'operatingHours',
+      'profileImage', 'location'
+    ]
+
+    allowedFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        bloodBank[field] = updateData[field]
+      }
+    })
+
+    await bloodBank.save()
+
+    // Return without password
+    const result = bloodBank.toObject()
+    delete result.password
 
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: updatedBloodBank
+      data: result
     })
   } catch (error) {
     console.error('Error updating profile:', error)
-    
-    // Delete uploaded file if there was an error
-    if (req.file) {
-      const filePath = req.file.path
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-      }
-    }
     
     res.status(500).json({ 
       success: false, 

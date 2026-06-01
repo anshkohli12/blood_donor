@@ -4,23 +4,9 @@ const Event = require('../models/Event')
 const User = require('../models/User')
 const { authenticateToken, requireAdmin } = require('../middleware/auth')
 const multer = require('multer')
-const path = require('path')
-const fs = require('fs')
 
-// Configure multer for event image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads/events')
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true })
-    }
-    cb(null, uploadDir)
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, 'event-' + uniqueSuffix + path.extname(file.originalname))
-  }
-})
+// Configure multer with memory storage (works on Vercel's read-only filesystem)
+const storage = multer.memoryStorage()
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
@@ -37,6 +23,12 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 })
+
+// Helper: convert multer file buffer to Base64 data URI
+function fileToDataUri(file) {
+  const base64 = file.buffer.toString('base64')
+  return `data:${file.mimetype};base64,${base64}`
+}
 
 // PUBLIC ROUTES
 
@@ -180,7 +172,7 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
       organizer: req.user.id,
       organizerName: req.user.name,
       status: 'pending', // Requires admin approval
-      image: req.file ? `/uploads/events/${req.file.filename}` : eventData.image || ''
+      image: req.file ? fileToDataUri(req.file) : eventData.image || ''
     })
 
     await event.save()
@@ -195,14 +187,6 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
     })
   } catch (error) {
     console.error('Error creating event:', error)
-    
-    // Delete uploaded file if there was an error
-    if (req.file) {
-      const filePath = req.file.path
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-      }
-    }
     
     res.status(500).json({ 
       success: false, 
@@ -262,16 +246,9 @@ router.put('/:id', authenticateToken, upload.single('image'), async (req, res) =
 
     const updateData = req.file ? JSON.parse(req.body.data) : req.body
 
-    // Handle image upload
+    // Handle image upload — store as Base64 data URI
     if (req.file) {
-      // Delete old image if exists
-      if (event.image) {
-        const oldImagePath = path.join(__dirname, '..', event.image)
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath)
-        }
-      }
-      updateData.image = `/uploads/events/${req.file.filename}`
+      updateData.image = fileToDataUri(req.file)
     }
 
     // If event was already approved and blood bank edits it, set back to pending
@@ -296,13 +273,6 @@ router.put('/:id', authenticateToken, upload.single('image'), async (req, res) =
     })
   } catch (error) {
     console.error('Error updating event:', error)
-    
-    if (req.file) {
-      const filePath = req.file.path
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-      }
-    }
     
     res.status(500).json({ 
       success: false, 
@@ -332,13 +302,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       })
     }
 
-    // Delete event image if exists
-    if (event.image) {
-      const imagePath = path.join(__dirname, '..', event.image)
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath)
-      }
-    }
+    // Image is stored as Base64 in DB, no file cleanup needed
 
     await Event.findByIdAndDelete(req.params.id)
 

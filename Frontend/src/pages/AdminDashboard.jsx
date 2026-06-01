@@ -127,7 +127,7 @@ const AdminDashboard = () => {
   const loadAdminData = async () => {
     try {
       setLoading(true)
-      
+
       // Load real data from available services only
       const [usersResponse, messagesResponse] = await Promise.all([
         authService.getAllUsers().catch(() => ({ success: false, data: [] })),
@@ -135,13 +135,13 @@ const AdminDashboard = () => {
       ])
 
       // Process users data
-      const usersData = Array.isArray(usersResponse.data) ? usersResponse.data : 
-                       (usersResponse.success && Array.isArray(usersResponse.users) ? usersResponse.users : [])
+      const usersData = Array.isArray(usersResponse.data) ? usersResponse.data :
+        (usersResponse.success && Array.isArray(usersResponse.users) ? usersResponse.users : [])
       setUsers(usersData)
 
       // Process messages data
-      const messagesData = Array.isArray(messagesResponse.data) ? messagesResponse.data : 
-                          (messagesResponse.success && Array.isArray(messagesResponse.messages) ? messagesResponse.messages : [])
+      const messagesData = Array.isArray(messagesResponse.data) ? messagesResponse.data :
+        (messagesResponse.success && Array.isArray(messagesResponse.messages) ? messagesResponse.messages : [])
       setMessages(messagesData)
 
       // For now, use mock data for services that don't have backend endpoints yet
@@ -161,17 +161,17 @@ const AdminDashboard = () => {
         completedDonations: requestsData.length > 0 ? requestsData.filter(r => r.status === 'completed').length : 142, // Mock until backend ready
         upcomingEvents: eventsData.length > 0 ? eventsData.filter(e => new Date(e.date) > now).length : 3 // Mock until backend ready
       }
-      
+
       setStats(realStats)
 
       // Create recent activity from real data
       const activity = []
-      
+
       // Add recent users (last 2)
       const recentUsers = usersData
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 2)
-      
+
       recentUsers.forEach(user => {
         activity.push({
           id: `user_${user._id}`,
@@ -187,7 +187,7 @@ const AdminDashboard = () => {
       const recentMessages = messagesData
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 2)
-        
+
       recentMessages.forEach(msg => {
         activity.push({
           id: `msg_${msg._id}`,
@@ -226,9 +226,9 @@ const AdminDashboard = () => {
       const sortedActivity = activity
         .sort((a, b) => new Date(b.time) - new Date(a.time))
         .slice(0, 6)
-        
+
       setRecentActivity(sortedActivity)
-      
+
     } catch (error) {
       console.error('Error loading admin data:', error)
       // Fall back to mock data if there's a major error
@@ -352,7 +352,7 @@ const AdminDashboard = () => {
   ]
 
   const renderOverview = () => (
-      <div className="space-y-6">
+    <div className="space-y-6">
       {/* Quick Stats */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -560,11 +560,10 @@ const AdminDashboard = () => {
                         {user.city}, {user.state}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.isActive 
-                            ? 'bg-green-100 text-green-800' 
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isActive
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
-                        }`}>
+                          }`}>
                           {user.isActive ? (
                             <>
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -795,21 +794,19 @@ const AdminDashboard = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          message.priority === 'high' ? 'bg-red-100 text-red-800' :
-                          message.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${message.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            message.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                          }`}>
                           {message.priority}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          message.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          message.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                          message.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${message.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            message.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                              message.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                          }`}>
                           {message.status}
                         </span>
                       </td>
@@ -973,7 +970,7 @@ const AdminDashboard = () => {
                 <p className="text-sm text-gray-600">Welcome back, {user?.firstName}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <Link
                 to="/"
@@ -1011,11 +1008,10 @@ const AdminDashboard = () => {
                     <button
                       key={section.id}
                       onClick={() => setActiveTab(section.id)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                        activeTab === section.id
+                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${activeTab === section.id
                           ? "bg-blood-crimson text-white"
                           : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                        }`}
                     >
                       <section.icon className="h-4 w-4" />
                       <span className="font-medium">{section.name}</span>
