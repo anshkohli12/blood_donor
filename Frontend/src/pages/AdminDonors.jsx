@@ -26,6 +26,7 @@ import {
   Activity,
   FileText,
   AlertCircle,
+  Trash2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
 import CustomButton from "../components/CustomButton"
@@ -50,6 +51,7 @@ const AdminDonors = () => {
     totalDonations: 0,
     recentRegistrations: 0
   })
+  const [donorToDelete, setDonorToDelete] = useState(null)
 
   useEffect(() => {
     // Check if user is admin
@@ -93,6 +95,33 @@ const AdminDonors = () => {
       console.error('Error fetching donors:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDonorAction = async (donorId, action) => {
+    try {
+      if (action === 'delete') {
+        setDonorToDelete(donorId)
+      }
+    } catch (error) {
+      console.error(`Error ${action} donor:`, error)
+      alert(error.response?.data?.message || `Failed to ${action} donor`)
+    }
+  }
+
+  const confirmDeleteDonor = async () => {
+    if (!donorToDelete) return
+    try {
+      setLoading(true)
+      await donorService.deleteDonor(donorToDelete)
+      alert('Donor deleted successfully')
+      setDonorToDelete(null)
+      fetchDonors() // Refresh the list
+    } catch (error) {
+      console.error(`Error deleting donor:`, error)
+      alert(error.response?.data?.message || `Failed to delete donor`)
+      setLoading(false)
+      setDonorToDelete(null)
     }
   }
 
@@ -174,16 +203,6 @@ const AdminDonors = () => {
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Back to Dashboard
               </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <CustomButton
-                onClick={exportDonors}
-                variant="outline"
-                className="flex items-center"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
-              </CustomButton>
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mt-4 flex items-center">
@@ -423,11 +442,11 @@ const AdminDonors = () => {
                               <Eye className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => navigator.clipboard.writeText(donor.email)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Copy Email"
+                              onClick={() => handleDonorAction(donor._id, 'delete')}
+                              className="text-red-600 hover:text-red-900 flex items-center space-x-1"
+                              title="Delete Donor"
                             >
-                              <Mail className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -518,6 +537,38 @@ const AdminDonors = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {donorToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl"
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Confirm Deletion</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this donor? Admin approval is required. This action cannot be undone and will permanently remove the donor's data from the system.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <CustomButton variant="outline" onClick={() => setDonorToDelete(null)}>
+                Cancel
+              </CustomButton>
+              <button 
+                onClick={confirmDeleteDonor}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Yes, Delete Donor
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Plus,
   Calendar,
+  Trash2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
 import CustomButton from "../components/CustomButton"
@@ -43,6 +44,7 @@ const AdminUsers = () => {
     adminUsers: 0,
     recentRegistrations: 0
   })
+  const [userToDelete, setUserToDelete] = useState(null)
 
   useEffect(() => {
     // Check if user is admin
@@ -89,12 +91,28 @@ const AdminUsers = () => {
 
   const handleUserAction = async (userId, action) => {
     try {
-      console.log(`${action} user ${userId}`)
-      // TODO: Implement user actions (activate, deactivate, delete)
-      // For now, just show an alert
-      alert(`Action "${action}" on user ${userId} - Feature coming soon!`)
+      if (action === 'delete') {
+        setUserToDelete(userId)
+      }
     } catch (error) {
       console.error(`Error ${action} user:`, error)
+      alert(error.response?.data?.message || `Failed to ${action} user`)
+    }
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return
+    try {
+      setLoading(true)
+      await authService.deleteUser(userToDelete)
+      alert('User deleted successfully')
+      setUserToDelete(null)
+      fetchUsers() // Refresh the list
+    } catch (error) {
+      console.error(`Error deleting user:`, error)
+      alert(error.response?.data?.message || `Failed to delete user`)
+      setLoading(false)
+      setUserToDelete(null)
     }
   }
 
@@ -227,10 +245,6 @@ const AdminUsers = () => {
                   <option value="user">Users</option>
                   <option value="admin">Admins</option>
                 </select>
-                <CustomButton variant="outline" className="flex items-center space-x-2">
-                  <Download className="h-4 w-4" />
-                  <span>Export</span>
-                </CustomButton>
               </div>
             </div>
           </CardContent>
@@ -241,10 +255,6 @@ const AdminUsers = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>All Users ({filteredUsers.length})</span>
-              <CustomButton variant="primary" className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>Add User</span>
-              </CustomButton>
             </CardTitle>
             <CardDescription>
               Manage all registered users and their accounts
@@ -341,28 +351,18 @@ const AdminUsers = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleUserAction(user._id, 'view')}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="View User Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleUserAction(user._id, 'edit')}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Edit User"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
                             {user.role !== 'admin' && (
                               <button
-                                onClick={() => handleUserAction(user._id, user.isActive ? 'deactivate' : 'activate')}
-                                className={user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
-                                title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                                onClick={() => handleUserAction(user._id, 'delete')}
+                                className="text-red-600 hover:text-red-900 flex items-center space-x-1"
+                                title="Delete User"
                               >
-                                {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                <Trash2 className="h-4 w-4" />
+                                <span className="text-xs">Delete</span>
                               </button>
+                            )}
+                            {user.role === 'admin' && (
+                              <span className="text-xs text-gray-400">Admin</span>
                             )}
                           </div>
                         </td>
@@ -375,6 +375,38 @@ const AdminUsers = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl"
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Confirm Deletion</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this user? Admin approval is required. This action cannot be undone and will permanently remove the user's data from the system.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <CustomButton variant="outline" onClick={() => setUserToDelete(null)}>
+                Cancel
+              </CustomButton>
+              <button 
+                onClick={confirmDeleteUser}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Yes, Delete User
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

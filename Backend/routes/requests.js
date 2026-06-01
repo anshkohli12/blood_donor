@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 const BloodRequestModel = require('../models/BloodRequest');
 const BloodBankModel = require('../models/BloodBank');
 const NotificationModel = require('../models/Notification');
@@ -10,26 +9,25 @@ const { ObjectId } = require('mongodb');
 
 const router = express.Router();
 
-// Multer config for prescription uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'prescription-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Multer config with memory storage (works on Vercel's read-only filesystem)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) return cb(null, true);
+    if (mimetype) return cb(null, true);
     cb(new Error('Only JPEG, PNG, and PDF files are allowed'));
   }
 });
+
+// Helper: convert multer file buffer to Base64 data URI
+function fileToDataUri(file) {
+  const base64 = file.buffer.toString('base64');
+  return `data:${file.mimetype};base64,${base64}`;
+}
 
 // Create a new blood request (with optional prescription upload)
 router.post('/', authenticateToken, upload.single('prescription'), async (req, res) => {
@@ -39,7 +37,7 @@ router.post('/', authenticateToken, upload.single('prescription'), async (req, r
       requesterId: req.user._id,
       requesterName: `${req.user.firstName} ${req.user.lastName}`,
       requesterEmail: req.user.email,
-      prescriptionPath: req.file ? req.file.filename : null
+      prescriptionPath: req.file ? fileToDataUri(req.file) : null
     };
 
     // Parse units as number

@@ -290,4 +290,51 @@ router.post('/init-admin', async (req, res) => {
   }
 });
 
+// DELETE /api/auth/users/:id - Delete a user (admin only)
+router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { ObjectId } = require('mongodb');
+    const userId = req.params.id;
+
+    // Prevent admin from deleting themselves
+    if (req.user._id.toString() === userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account'
+      });
+    }
+
+    const collection = UserModel.getCollection();
+    const user = await collection.findOne({ _id: new ObjectId(userId) });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deleting other admins
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete admin users'
+      });
+    }
+
+    await collection.deleteOne({ _id: new ObjectId(userId) });
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -62,7 +62,6 @@ const Navbar = () => {
         { name: "Users", path: "/admin/users" },
         { name: "Messages", path: "/admin/contact-messages" },
         { name: "Events", path: "/admin/events" },
-        { name: "Analytics", path: "/admin/analytics" },
       ]
     }
 

@@ -274,12 +274,6 @@ const AdminDashboard = () => {
       description: "Navigate to main website pages"
     },
     {
-      id: "donations",
-      name: "Donations",
-      icon: Droplets,
-      description: "Track and manage blood donations"
-    },
-    {
       id: "events",
       name: "Events",
       icon: Calendar,
@@ -290,18 +284,6 @@ const AdminDashboard = () => {
       name: "Blood Banks",
       icon: Building2,
       description: "Manage blood bank registrations and inventory"
-    },
-    {
-      id: "analytics",
-      name: "Analytics",
-      icon: TrendingUp,
-      description: "View detailed reports and analytics"
-    },
-    {
-      id: "settings",
-      name: "Settings",
-      icon: Settings,
-      description: "System settings and configuration"
     }
   ]
 
@@ -357,16 +339,6 @@ const AdminDashboard = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Dashboard Statistics</h2>
-          <div className="flex items-center space-x-2">
-            {(stats.totalUsers > 0 || stats.totalMessages > 0) ? (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                ✓ Users & Messages: Real Data
-              </span>
-            ) : null}
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-              ⚠ Events & Donations: Mock Data
-            </span>
-          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickStats.map((stat, index) => (
@@ -463,12 +435,18 @@ const AdminDashboard = () => {
   const handleUserAction = async (userId, action) => {
     try {
       setLoadingData(true)
-      // Here you would make API calls to perform user actions
-      console.log(`${action} user ${userId}`)
-      // For now, just reload data
+      if (action === 'delete') {
+        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+          setLoadingData(false)
+          return
+        }
+        await authService.deleteUser(userId)
+        alert('User deleted successfully')
+      }
       await loadAdminData()
     } catch (error) {
       console.error(`Error ${action} user:`, error)
+      alert(error.response?.data?.message || `Failed to ${action} user`)
     } finally {
       setLoadingData(false)
     }
@@ -490,10 +468,6 @@ const AdminDashboard = () => {
               className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blood-crimson"
             />
           </div>
-          <CustomButton variant="outline" className="flex items-center space-x-2">
-            <Download className="h-4 w-4" />
-            <span>Export</span>
-          </CustomButton>
         </div>
       </div>
 
@@ -582,28 +556,18 @@ const AdminDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleUserAction(user._id, 'view')}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="View User"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleUserAction(user._id, 'edit')}
-                            className="text-yellow-600 hover:text-yellow-900"
-                            title="Edit User"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
                           {user.role !== 'admin' && (
                             <button
-                              onClick={() => handleUserAction(user._id, user.isActive ? 'deactivate' : 'activate')}
-                              className={user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
-                              title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                              onClick={() => handleUserAction(user._id, 'delete')}
+                              className="text-red-600 hover:text-red-900 flex items-center space-x-1"
+                              title="Delete User"
                             >
-                              {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                              <Trash2 className="h-4 w-4" />
+                              <span className="text-xs">Delete</span>
                             </button>
+                          )}
+                          {user.role === 'admin' && (
+                            <span className="text-xs text-gray-400">Admin</span>
                           )}
                         </div>
                       </td>
@@ -918,17 +882,7 @@ const AdminDashboard = () => {
           </Card>
         )
       case "analytics":
-        return (
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-12">
-                <TrendingUp className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Analytics & Reports</h3>
-                <p className="text-gray-600">Detailed analytics and reporting - Coming Soon</p>
-              </div>
-            </CardContent>
-          </Card>
-        )
+        return renderOverview()
       case "settings":
         return (
           <Card>

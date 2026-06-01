@@ -1,5 +1,6 @@
 const express = require('express');
 const DonorModel = require('../models/Donor');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -125,8 +126,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/donors/:id - Delete donor
-router.delete('/:id', async (req, res) => {
+// DELETE /api/donors/:id - Delete donor (admin only)
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await DonorModel.deleteDonor(id);

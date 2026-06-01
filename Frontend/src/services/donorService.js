@@ -36,4 +36,9 @@ export const donorService = {
     const response = await api.get(`/donors/search?q=${encodeURIComponent(query)}`)
     return response.data
   },
+
+  async deleteDonor(id) {
+    const response = await api.delete(`/donors/${id}`)
+    return response.data
+  },
 }

@@ -36,4 +36,9 @@ export const authService = {
     const response = await api.get("/auth/users")
     return response.data
   },
+
+  async deleteUser(userId) {
+    const response = await api.delete(`/auth/users/${userId}`)
+    return response.data
+  },
 }
